@@ -261,7 +261,7 @@ if __name__ == '__main__':
     IV_data = read_data([IV_filename])
     plot_IV(IV_data,plot_filename= figure_dir +'/'+ 'I-V Curve.png')
 
-    """#   In-plane MR 1T
+    #   In-plane MR 1T
     Inplane_MR_1T_data1 = read_data([Inplane_MR_1T_filename1,Inplane_MR_1T_filename2])
     plot_MR(Inplane_MR_1T_data1,title='In-plane MR 1T forward',plot_filename= figure_dir +'/'+ 'In-plane MR data 1T forward.png')
 
@@ -277,4 +277,4 @@ if __name__ == '__main__':
 
     #   Out-of-plane MR
     Outplane_MR_data = read_data([Outplane_MR_filename])
-    plot_MR(Outplane_MR_data,bool_out_of_plane=True,title='Out-of-plane MR',plot_filename= figure_dir +'/'+ 'Out-of-plane MR data.png')"""
+    plot_MR(Outplane_MR_data,bool_out_of_plane=True,title='Out-of-plane MR',plot_filename= figure_dir +'/'+ 'Out-of-plane MR data.png')
