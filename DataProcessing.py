@@ -1,4 +1,5 @@
 import numpy as np
+import csv
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.integrate import quad
@@ -13,28 +14,39 @@ hbar = 1.054571817e-34  #   Reduced Planck Constant
 def read_data(filenames):
     def read_file(filename):
         with open(filename, encoding='utf-8')as file:
-            # Skip the first line
-            next(file)
 
-            data = []
+            try:
+                # Create a CSV reader object
+                reader = csv.reader(file)
+                for i in range(1):
+                    next(reader)
+                data = [[float(num) for num in row] for row in reader]
+                data = np.array(data)
+                return data
 
-            # Read each line
-            for line in file:
-                # Split the line into a list of strings
-                string_numbers = line.strip().split()
+            except:
+                # Skip the first line
+                next(file)
+                data = []
 
-                numbers=[]
-                # Convert each string to a number and store in a list
-                for i in range(len(string_numbers)):
-                    num = 0.
-                    try:                    
-                        num = float(string_numbers[i])
-                    except:                    
+                # Read each line
+                for line in file:
+
+                    # Split the line into a list of strings
+                    string_numbers = line.strip().split()
+                    numbers=[]
+
+                    # Convert each string to a number and store in a list
+                    for i in range(len(string_numbers)):
                         num = 0.
-                    numbers.append(num)
-                data.append(numbers)
-            
-            return np.array(data)
+                        try:                    
+                            num = float(string_numbers[i])
+                        except:                    
+                            num = 0.
+                        numbers.append(num)
+                    data.append(numbers)
+                
+                return np.array(data)
     
     result = np.array([])
     
@@ -110,7 +122,7 @@ def give_some_range_of_data(x,y,value_range,reverse=False):
     y_new = np.array(y_new)
     return x_new, y_new
 
-def fit_hanle_signal(B_field, R_data, left_or_right='both'):
+def fit_hanle_signal(B_field, R_data, Hanle_Signal_Range = 1000., left_or_right='both'):
 
     #   Define the function to fit
     def parabolic_func(x, a, b, c):
@@ -125,17 +137,17 @@ def fit_hanle_signal(B_field, R_data, left_or_right='both'):
         Bz = B_field
         R_parabolic_background = np.ones(len(R_data))*np.min(R_data)
         R_Hanle_signal = R_data -R_parabolic_background
+        
         # Fit the value of relax time in Hanle signals with direct model
-        Signal_Range = 1000.
         if left_or_right=='both':
-            Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[-Signal_Range,Signal_Range])
+            Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[-Hanle_Signal_Range,Hanle_Signal_Range])
         elif left_or_right=='left':
-            Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[-Signal_Range,0.])
+            Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[-Hanle_Signal_Range,0.])
         elif left_or_right=='right':
-            Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[0.,Signal_Range])
+            Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[0.,Hanle_Signal_Range])
 
         r0i = np.max(R_Hanle)
-        tausi = 2e-10 #1/(g*muB/hbar)/np.std(Bz/10000.)
+        tausi = 1/(g*muB/hbar)/np.std(Bz/10000.)
         p0 = [r0i,tausi]
         popt2, pcov2 = curve_fit(Hanle_effect, Bz, R_Hanle,p0=p0)
         r0, taus = popt2
@@ -147,6 +159,7 @@ def fit_hanle_signal(B_field, R_data, left_or_right='both'):
     # Filter out the parabolic background
     SR1 = 7500.
     SR2 = 1000.
+
     B_para, R_para = give_some_range_of_data(B_field,R_data,[-SR1,SR1])
     B_para, R_para = give_some_range_of_data(B_para, R_para,[-SR2,SR2],reverse=True)
     popt, pcov = curve_fit(parabolic_func, B_para, R_para)
@@ -156,13 +169,12 @@ def fit_hanle_signal(B_field, R_data, left_or_right='both'):
     R_Hanle_signal = R_data - R_parabolic_background
 
     # Fit the value of relax time in Hanle signals with direct model
-    Signal_Range = 1000.
     if left_or_right=='both':
-        Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[-Signal_Range,Signal_Range])
+        Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[-Hanle_Signal_Range,Hanle_Signal_Range])
     elif left_or_right=='left':
-        Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[-Signal_Range,0.])
+        Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[-Hanle_Signal_Range,0.])
     elif left_or_right=='right':
-        Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[0.,Signal_Range])
+        Bz, R_Hanle = give_some_range_of_data(B_field,R_Hanle_signal,[0.,Hanle_Signal_Range])
 
     r0i = np.max(R_Hanle)
     tausi = 1/(g*muB/hbar)/np.std(Bz/10000.)
@@ -230,7 +242,7 @@ def plot_IV(data,fig_dir,original=False,I_col=1,V_col=0):
     # Plot figures
     plot_figure([V_data,V_data],[I_data,I_fit],['I-V data','I-V fitting'],'V(V)','I(A)',title='I-V curve',plot_filename=fig_dir+'/'+'I-Vcurve',style=['dot','line'],text_message=text_message,dot_size=10)
 
-def plot_MR(data,fig_dir,original=False,bool_out_of_plane=True,LockingRatio=1.0e6,I_col=1,R_col=5):
+def plot_MR(data,fig_dir,original=False,bool_out_of_plane=True,BI_conver_ratio = 200.,LockingRatio=1.0e6,Hanle_Signal_Range=1000.,I_col=1,R_col=5):
     I_data = data[:,I_col]
     R_data = data[:,R_col]
 
@@ -245,14 +257,14 @@ def plot_MR(data,fig_dir,original=False,bool_out_of_plane=True,LockingRatio=1.0e
     I_data, R_data = sort_x_y(I_data,R_data)
 
     # Unit conversion (B_field: Gauss, R_data: Ohm)
-    B_field = I_data *200.
-    R_data = R_data *LockingRatio
+    B_field = I_data * BI_conver_ratio
+    R_data = R_data * LockingRatio
 
     if bool_out_of_plane:
         #   Fit the data
         choose_plot_range = ['both','left','right']
         for i in range(len(choose_plot_range)):
-            Bz, R_parabolic_background, R_Hanle, R_fit, taus_message = fit_hanle_signal(B_field,R_data,left_or_right=choose_plot_range[i])
+            Bz, R_parabolic_background, R_Hanle, R_fit, taus_message = fit_hanle_signal(B_field,R_data,Hanle_Signal_Range=Hanle_Signal_Range,left_or_right=choose_plot_range[i])
             text_message = taus_message
             if i ==0:
                 plot_figure([B_field,B_field],[R_data,R_parabolic_background],['Original Data','Parabolic Background'],'Bz(Gauss)','Resistance(Omega)',title='B-MR curve',plot_filename=fig_dir+'/'+'B-MRcurve',style=['dot','line'],text_message=text_message,dot_size=10)
@@ -261,8 +273,13 @@ def plot_MR(data,fig_dir,original=False,bool_out_of_plane=True,LockingRatio=1.0e
     else:
         plot_figure([B_field],[R_data],['B-MR data'],'B(Gauss)','R(Ohm)',title='B-MR curve',plot_filename=fig_dir+'/'+'B-MRcurve',style=['dot'],text_message='',dot_size=10)
 
-def data_processing(fig_dir,input_filenames,plot_func,original=False):
+def data_processing(**kwargs):
     
+    fig_dir = kwargs.get('fig_dir', 'data_fig')
+    input_filenames = kwargs.get('input_filenames', [])
+    plot_func = kwargs.get('plot_func', plot_MR)
+    original = kwargs.get('original', False)
+
     if not os.path.exists(fig_dir):
         os.makedirs(fig_dir)
     else:
@@ -270,9 +287,18 @@ def data_processing(fig_dir,input_filenames,plot_func,original=False):
 
     #   Read data
     data = read_data(input_filenames)
-
+    
     #   Plot figure
-    plot_func(data,fig_dir,original=original)
+    if plot_func is plot_MR:
+        bool_out_of_plane = kwargs.get('bool_out_of_plane', True)
+        BI_conver_ratio = kwargs.get('BI_conver_ratio', 200.)
+        LockingRatio = kwargs.get('LockingRatio', 1.0e6)
+        Hanle_Signal_Range = kwargs.get('Hanle_Signal_Range', 1000.)
+        I_col = kwargs.get('I_col',1)
+        R_col = kwargs.get('R_col',5)
+        plot_func(data,fig_dir,original,BI_conver_ratio=BI_conver_ratio,LockingRatio=LockingRatio,Hanle_Signal_Range=Hanle_Signal_Range,I_col=I_col,R_col=R_col)
+    else:
+        plot_func(data,fig_dir,original=original)
 
    
 
@@ -280,6 +306,12 @@ def data_processing(fig_dir,input_filenames,plot_func,original=False):
 
 if __name__ == '__main__':
 
+    #   Plot Ting-Chun's data
+    TC_file = './ori_data/TC_Gr_MR_data.csv'
+    data_processing(fig_dir='TC Data Single layer',input_filenames=[TC_file],plot_func=plot_MR,BI_conver_ratio=1.0,LockingRatio=1.0,Hanle_Signal_Range=2500.,I_col=0,R_col=1)
+    data_processing(fig_dir='TC Data Multilayer',input_filenames=[TC_file],plot_func=plot_MR,BI_conver_ratio=1.0,LockingRatio=1.0,Hanle_Signal_Range=2500.,I_col=2,R_col=3)
+    data_processing(fig_dir='TC Data 1L FET Gr',input_filenames=[TC_file],plot_func=plot_MR,BI_conver_ratio=1.0,LockingRatio=1.0,Hanle_Signal_Range=2500.,I_col=4,R_col=5)
+    
     #   Plot R-T
     RTfilename_total = './ori_data/ACR_monitor_total.txt'
     data_processing(fig_dir='ACR Monitor Total',input_filenames=[RTfilename_total],plot_func=plot_ACR_Monitor)
@@ -289,7 +321,7 @@ if __name__ == '__main__':
     data_processing(fig_dir='ACR Monitor part',input_filenames=[RTfilename_part],plot_func=plot_ACR_Monitor)
     data_processing(fig_dir='Original Data ACR Monitor part',input_filenames=[RTfilename_part],plot_func=plot_ACR_Monitor,original=True)
 
-    """#   1T out-of-plane MR
+    #   1T out-of-plane MR
     Outplane_MR_1T_filename1 = './ori_data/AC_Scan_KA_1T_0T_T10K_1MOhm_wt3s_tc1s.txt'
     Outplane_MR_1T_filename2 = './ori_data/AC_Scan_KA_m1T_0T_T10K_1MOhm_wt3s_tc1s.txt'
     data_processing(fig_dir='1T Out-of-plane MR',input_filenames=[Outplane_MR_1T_filename1,Outplane_MR_1T_filename2],plot_func=plot_MR)
@@ -300,4 +332,4 @@ if __name__ == '__main__':
     Outplane_MR_1000G_filename2 = './ori_data/AC_Scan_KA_m1000G_0G_T10K_1MOhm_wt3s_tc1s.txt'
     data_processing(fig_dir='1000G Out-of-plane MR',input_filenames=[Outplane_MR_1000G_filename1,Outplane_MR_1000G_filename2],plot_func=plot_MR)
     data_processing(fig_dir='Original Data 1000G Out-of-plane MR',input_filenames=[Outplane_MR_1000G_filename1,Outplane_MR_1000G_filename2],plot_func=plot_MR,original=True)
-    """
+    
