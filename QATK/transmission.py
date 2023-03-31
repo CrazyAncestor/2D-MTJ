@@ -5,11 +5,10 @@ def write_transmissionfile(filename):
     # Load device configuration
     # -------------------------------------------------------------
     transmission_spectrum = nlread(filename+'.hdf5', TransmissionSpectrum)[0]
-    # Print out all k-dependent transmission coefficients
     spin_name = ["Up","Down"]
     spins = [Spin.Up,Spin.Down] 
 
-    #print data
+    #   Write data
     for s in range(len(spin_name)):
         with open(spin_name[s]+'transmission_'+filename+'.txt', "w") as file:
 
@@ -24,7 +23,7 @@ def write_transmissionfile(filename):
                 for j in range(data.shape[1]):
                     file.write('%10.4f %10.4f %16.6e\n' % (kpoints[j][0],kpoints[j][1],data[i][j]))
 
-def plot_trans(filename):
+def plot_trans(filename,value_max=1.0):
     
     spin_name = ["Up","Down"]
     
@@ -46,26 +45,32 @@ def plot_trans(filename):
                 data.append(numbers)
 
         data = np.array(data)
-        print(data.shape)
         ka = data[:,0]
         kb = data[:,1]
         transmission = data[:,2]
 
-        fig,ax = plt.subplots()
-        data_content = ax.scatter(ka, kb, c=transmission, cmap='Reds')
+        # plot the data
+        fig, ax = plt.subplots()
+        data_content = ax.scatter(ka, kb, c=transmission, cmap='Reds', vmin = 0., vmax = value_max)
         ax.set_xlabel('ka')
         ax.set_ylabel('kb')
-        fig.colorbar(data_content, label = 'transmission')
+        cbar = fig.colorbar(data_content, label = 'transmission',ax=ax)
         fig.savefig(spin_name[s]+filename+'.png')
 
-parafile = 'ParaCobaltGrCobalt'
-#antifile = 'AntiCobaltGrCobalt'
+if __name__ == '__main__':
 
-write_transmissionfile(parafile)
-#write_transmissionfile(antifile)
+    #   Write the transmission coeffiecients into files
+    parafile = 'ParaCobaltGrCobalt'
+    antifile = 'AntiCobaltGrCobalt'
 
-filename1 = "transmission_ParaCobaltGrCobalt"
-#filename2 = "transmission_AntiCobaltGrCobalt"
+    write_transmissionfile(parafile)
+    write_transmissionfile(antifile)
 
-plot_trans(filename1)
-#plot_trans(filename2)
+    #   Plot the transmission results
+    trans_max = 3.5
+    
+    filename1 = "transmission_ParaCobaltGrCobalt"
+    filename2 = "transmission_AntiCobaltGrCobalt"
+
+    plot_trans(filename1,trans_max)
+    plot_trans(filename2,trans_max)
