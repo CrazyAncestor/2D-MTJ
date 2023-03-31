@@ -55,7 +55,7 @@ def plot_trans(filename,value_max=1.0):
         ax.set_xlabel('ka')
         ax.set_ylabel('kb')
         cbar = fig.colorbar(data_content, label = 'transmission',ax=ax)
-        fig.savefig(spin_name[s]+filename+'.png')
+        fig.savefig(spin_name[s]+filename+'.pdf')
 
 if __name__ == '__main__':
 
