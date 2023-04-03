@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+
 def write_transmissionfile(filename):
     # -------------------------------------------------------------
     # Load device configuration
@@ -23,13 +25,13 @@ def write_transmissionfile(filename):
                 for j in range(data.shape[1]):
                     file.write('%10.4f %10.4f %16.6e\n' % (kpoints[j][0],kpoints[j][1],data[i][j]))
 
-def plot_trans(filename,value_max=1.0):
+def plot_trans(filename,data_dir,plot_dir,ext='.png',value_max=1.0):
     
     spin_name = ["Up","Down"]
     
     for s in range(len(spin_name)):
         data = []
-        with open(spin_name[s]+filename+'.txt', "r") as file:
+        with open(data_dir+spin_name[s]+filename+'.txt', "r") as file:
             # Read the file into a list of strings
             lines = file.readlines()
             # Exclude the first three lines
@@ -55,22 +57,28 @@ def plot_trans(filename,value_max=1.0):
         ax.set_xlabel('ka')
         ax.set_ylabel('kb')
         cbar = fig.colorbar(data_content, label = 'transmission',ax=ax)
-        fig.savefig(spin_name[s]+filename+'.pdf')
+        fig.savefig(plot_dir+spin_name[s]+filename+ext)
 
 if __name__ == '__main__':
+    data_dir = sys.argv[1]
+    plot_dir = sys.argv[2]
 
     #   Write the transmission coeffiecients into files
-    parafile = 'ParaCobaltGrCobalt'
-    antifile = 'AntiCobaltGrCobalt'
+    WRITE_DATA = False
 
-    write_transmissionfile(parafile)
-    write_transmissionfile(antifile)
+    if WRITE_DATA:
+        parafile = data_dir+'ParaCobaltGrCobalt'
+        antifile = data_dir+'AntiCobaltGrCobalt'
+
+        write_transmissionfile(parafile)
+        write_transmissionfile(antifile)
 
     #   Plot the transmission results
-    trans_max = 3.5
+    trans_max = sys.argv[3]
+    ext = sys.argv[4]
     
     filename1 = "transmission_ParaCobaltGrCobalt"
     filename2 = "transmission_AntiCobaltGrCobalt"
 
-    plot_trans(filename1,trans_max)
-    plot_trans(filename2,trans_max)
+    plot_trans(filename1,data_dir,plot_dir,ext,trans_max)
+    plot_trans(filename2,data_dir,plot_dir,ext,trans_max)
