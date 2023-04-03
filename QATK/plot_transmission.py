@@ -62,23 +62,24 @@ def plot_trans(filename,data_dir,plot_dir,ext='.png',value_max=1.0):
 if __name__ == '__main__':
     data_dir = sys.argv[1]
     plot_dir = sys.argv[2]
+    structure = sys.argv[3]
 
     #   Write the transmission coeffiecients into files
     WRITE_DATA = False
 
     if WRITE_DATA:
-        parafile = data_dir+'ParaCobaltGrCobalt'
-        antifile = data_dir+'AntiCobaltGrCobalt'
+        parafile = data_dir+'Para'+structure
+        antifile = data_dir+'Anti'+structure
 
         write_transmissionfile(parafile)
         write_transmissionfile(antifile)
 
     #   Plot the transmission results
-    trans_max = sys.argv[3]
-    ext = sys.argv[4]
+    trans_max = sys.argv[4]
+    ext = sys.argv[5]
     
-    filename1 = "transmission_ParaCobaltGrCobalt"
-    filename2 = "transmission_AntiCobaltGrCobalt"
+    filename1 = "transmission_Para"+structure
+    filename2 = "transmission_Anti"+structure
 
     plot_trans(filename1,data_dir,plot_dir,ext,trans_max)
     plot_trans(filename2,data_dir,plot_dir,ext,trans_max)
