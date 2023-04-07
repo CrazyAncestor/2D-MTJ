@@ -23,6 +23,9 @@ class DataProcessor:
         self.plot_func = kwargs.get('plot_func', 'plot_MR')
         self.LockingRatio = kwargs.get('LockingRatio', 1.0e6)
 
+        self.labels = kwargs.get('labels', ['forward','backward'])
+        self.styles = kwargs.get('styles', ['dot','dot'])
+
         self.bool_out_of_plane = kwargs.get('bool_out_of_plane', True)
         self.BI_conver_ratio = kwargs.get('BI_conver_ratio', 200.)
         self.Hanle_Signal_Range = kwargs.get('Hanle_Signal_Range', 1000.)
@@ -31,59 +34,54 @@ class DataProcessor:
         self.I_col = kwargs.get('I_col',1)
         self.T_col = kwargs.get('T_col',2)
         self.R_col = kwargs.get('R_col',5)
+        self.rs_col = kwargs.get('rs_col',0)
+        self.int_col = kwargs.get('int_col',1)
 
         self.ProcessData()
 
 
     def read_data(self, filenames):
+
         def read_file(filename):
             with open(filename, encoding='utf-8')as file:
+                # Skip the first line
+                next(file)
+                data = []
 
-                try:
-                    # Create a CSV reader object
-                    reader = csv.reader(file)
-                    for i in range(1):
-                        next(reader)
-                    data = [[float(num) for num in row] for row in reader]
-                    data = np.array(data)
-                    return data
+                # Read each line
+                for line in file:
 
-                except:
-                    # Skip the first line
-                    next(file)
-                    data = []
+                    # Split the line into a list of strings
+                    string_numbers = line.strip().split()
+                    numbers=[]
 
-                    # Read each line
-                    for line in file:
-
-                        # Split the line into a list of strings
-                        string_numbers = line.strip().split()
-                        numbers=[]
-
-                        # Convert each string to a number and store in a list
-                        for i in range(len(string_numbers)):
+                    # Convert each string to a number and store in a list
+                    for i in range(len(string_numbers)):
+                        num = 0.
+                        try:                    
+                            num = float(string_numbers[i])
+                        except:                    
                             num = 0.
-                            try:                    
-                                num = float(string_numbers[i])
-                            except:                    
-                                num = 0.
-                            numbers.append(num)
-                        data.append(numbers)
+                        numbers.append(num)
+                    data.append(numbers)
+                    
+                return np.array(data)
 
-                    return np.array(data)
-
-        result = np.array([])
-
+        result = []
         for i in range(len(filenames)):
-            data = read_file(filenames[i])
-            if i ==0:
-                result = data
-            else:
-                result = np.concatenate((result, data), axis=0)
+            data = np.array([])
+            for j in range(len(filenames[i])):
+                temp = read_file(filenames[i][j])
+                if j ==0:
+                    data = temp
+                else:
+                    data = np.concatenate((data, temp), axis=0)
+            result.append(data)
         return result
+        
 
     #   Result plotting function
-    def plot_figure(self, xs, ys, labels, x_label, y_label, title, plot_filename, style,text_message=''):
+    def plot_figure(self, xs, ys, labels, x_label, y_label, title, figname, style):
         # Create a figure and axis object
         fig, ax = plt.subplots(figsize=(10, 8))
 
@@ -108,15 +106,11 @@ class DataProcessor:
         # Set legend
         ax.legend()
 
-        # Print text messages
-        ax.text(0.95,0.05, text_message, fontsize=12, ha='right', va='bottom', transform=ax.transAxes, bbox={'facecolor': 'white', 'pad': 0.5, 'edgecolor': 'black', 'alpha': 0.5})
-
-
         # Show the plot
         if self.original:
-            plt.savefig(self.fig_dir+'/original '+plot_filename+self.ext)
+            plt.savefig(self.fig_dir+'/original '+figname+self.ext)
         else:
-            plt.savefig(self.fig_dir+'/'+plot_filename+self.ext)
+            plt.savefig(self.fig_dir+'/'+figname+self.ext)
 
     #   Filter out outliers in data
     def eliminate_outliers(self, x, y, threshold=3.):
@@ -127,7 +121,7 @@ class DataProcessor:
         outlier_indices = find_outliers(y,threshold)
         x_new = np.delete(x, outlier_indices)
         y_new = np.delete(y, outlier_indices)
-        return x_new,y_new
+        return np.array(x_new),np.array(y_new)
     
     def sort_x_y(self, x, y):
         sort_indices = np.argsort(x)
@@ -150,156 +144,171 @@ class DataProcessor:
         y_new = np.array(y_new)
         return x_new, y_new
     
-    def fit_hanle_signal(self, B_field, R_data, left_or_right='both'):
+    #   Define the function to fit
+    def inverse(self,x):
+        return 1/x
 
-        #   Define the function to fit
-        def parabolic_func(x, a, b, c):
-            return a*x**2 + b*x + c
+    def log(self,x):
+        return np.log(x)
 
-        def Hanle_effect(Bz,r0,taus):
-            omega_L = (Bz /10000.)*self.g*self.muB/self.hbar # Turning Bz from Gauss to Tesla
-            y2 = r0 /(1+(taus*omega_L)**2)
-            return y2
+    def identity(self,x):
+        return x
 
-        if np.max(B_field)<2000.:
-            Bz = B_field
-            R_parabolic_background = np.ones(len(R_data))*np.min(R_data)
-            R_Hanle_signal = R_data -R_parabolic_background
-            
-            # Fit the value of relax time in Hanle signals with direct model
-            if left_or_right=='both':
-                Bz, R_Hanle = self.give_some_range_of_data(B_field,R_Hanle_signal,[-self.Hanle_Signal_Range,self.Hanle_Signal_Range])
-            elif left_or_right=='left':
-                Bz, R_Hanle = self.give_some_range_of_data(B_field,R_Hanle_signal,[-self.Hanle_Signal_Range,0.])
-            elif left_or_right=='right':
-                Bz, R_Hanle = self.give_some_range_of_data(B_field,R_Hanle_signal,[0.,self.Hanle_Signal_Range])
+    def linear(self,x,*para):
+        a, b = para
+        return a*x + b
+        
+    def parabolic_func(self,x, *para):
+        a, b, c = para
+        return a*x**2 + b*x + c
+    
+    def deviation_func(self,x, *para):
+        a = para
+        return a
 
-            r0i = np.max(R_Hanle)
-            tausi = 1/(self.g*self.muB/self.hbar)/np.std(Bz/10000.)
-            p0 = [r0i,tausi]
-            popt2, pcov2 = curve_fit(Hanle_effect, Bz, R_Hanle,p0=p0)
-            r0, taus = popt2
-            R_fit_directModel = Hanle_effect(Bz,r0,taus)
-            taus_message = f'relaxation time = {taus:.2e}sec'
+    def Hanle_effect(self,Bz, *para):
+        taus,r0 = para
+        omega_L = (Bz /10000.)*self.g*self.muB/self.hbar # Turning Bz from Gauss to Tesla
+        y2 = r0 /(1+(taus*omega_L)**2)
+        return y2
 
-            return Bz, R_parabolic_background, R_Hanle, R_fit_directModel, taus_message
 
-        # Filter out the parabolic background
-        SR1 = 7500.
-        SR2 = 1000.
-
-        B_para, R_para = self.give_some_range_of_data(B_field,R_data,[-SR1,SR1])
-        B_para, R_para = self.give_some_range_of_data(B_para, R_para,[-SR2,SR2],reverse=True)
-        popt, pcov = curve_fit(parabolic_func, B_para, R_para)
-
-        a, b, c = popt
-        R_parabolic_background = parabolic_func(B_field,a,b,c)
-        R_Hanle_signal = R_data - R_parabolic_background
-
-        # Fit the value of relax time in Hanle signals with direct model
-        if left_or_right=='both':
-            Bz, R_Hanle = self.give_some_range_of_data(B_field,R_Hanle_signal,[-self.Hanle_Signal_Range,self.Hanle_Signal_Range])
-        elif left_or_right=='left':
-            Bz, R_Hanle = self.give_some_range_of_data(B_field,R_Hanle_signal,[-self.Hanle_Signal_Range,0.])
-        elif left_or_right=='right':
-            Bz, R_Hanle = self.give_some_range_of_data(B_field,R_Hanle_signal,[0.,self.Hanle_Signal_Range])
-
-        r0i = np.max(R_Hanle)
-        tausi = 1/(self.g*self.muB/self.hbar)/np.std(Bz/10000.)
-        p0 = [r0i,tausi]
-        popt2, pcov2 = curve_fit(Hanle_effect, Bz, R_Hanle,p0=p0)
-        r0, taus = popt2
-        R_fit_directModel = Hanle_effect(Bz,r0,taus)
-        taus_message = f'relaxation time = {taus:.2e}sec'
-
-        return Bz, R_parabolic_background, R_Hanle, R_fit_directModel, taus_message
     
     #   Data processing and figure making
     def plot_ACR_Monitor(self):
-        T_data = self.data[:,self.T_col]
-        R_data = self.data[:,self.R_col]*self.LockingRatio
-        T_data , R_data = self.give_some_range_of_data(T_data,R_data,value_range)
-        # Plot original data
-        if self.original:
-            self.plot_figure([T_data],[R_data],['R-Temp data'],'Temp(K)','R(Ohm)',title='R-Temp curve',plot_filename='R-Tempcurve',style=['dot'])
-            return
-        
-        # Eliminate outliers
-        T_data , R_data = self.sort_x_y(T_data,R_data)
-        T_data , R_data = self.eliminate_outliers(T_data,R_data)
+        unit_convert = [1.0,self.LockingRatio]
+        self.x_col = self.T_col
+        self.y_col = self.R_col
 
-        def ACR_func(T_conv,a,b):
-            return a*T_conv + b
+        def text_func(x):
+            return f'Band Gap = {(x/11606*1e3):.2e} meV'
         
-        # Fit the ACR function of T-R curve
-        popt, pcov = curve_fit(ACR_func,1/T_data,np.log(R_data))
-        a, b = popt
-        LOGRVR_fit = ACR_func(1/T_data,a,b)
-        
-        # Text message telling band gap energy
-        text_message = f'Band Gap = {(a/11606*1e3):.2e} meV'
-
-        # Plot figures
-        self.plot_figure([1/T_data,1/T_data],[np.log(R_data),LOGRVR_fit],['R-T data','R-T fitting'],'1/T(1/K)','lnR(Ohm)',title='R-Temp curve',plot_filename="R_T_fitting",style=['dot','line'],text_message=text_message)
-        self.plot_figure([T_data],[R_data],['R-Temp data'],'Temp(K)','R(Ohm)',title='R-Temp curve',plot_filename='R-Tempcurve',style=['dot'],text_message=text_message)
-
+        self.plot_data(unit_convert,self.inverse,self.log,self.linear,[1.,1.],['Temp(K)','1/T(1/K)'],['R(Ohm)','log R'],['R-Temp curve','Boltzman Model fitting of R-Temp'],['R-Temp data','R-T fitting'],text_func=text_func)
+    
     def plot_IV(self):
-        I_data = self.data[:,self.I_col]
-        V_data = self.data[:,self.V_col]
+        unit_convert = [1.0,1.0]
+        self.x_col = self.V_col
+        self.y_col = self.I_col
 
-        # Plot original data
-        if self.original:
-            self.plot_figure([V_data],[I_data],['I-V data'],'V(V)','I(A)',title='I-V curve',plot_filename='I-Vcurve',style=['dot'])
-            return
-
-        # Eliminate outliers
-        V_data , I_data = self.eliminate_outliers(V_data,I_data)
-        V_data , I_data = self.sort_x_y(V_data,I_data)
-
-        def linear_func(x,a,b):
-            return a*x + b
+        def text_func(x):
+            return f'Resistance = {(1/x):.2e} Ohm'
         
-        # Fit the linear function of I-V curve
-        popt, pcov = curve_fit(linear_func,V_data,I_data)
-        a, b = popt
-        I_fit = linear_func(V_data,a,b)
-        
-        # Text message telling resistance
-        text_message = f'Resistance = {(1/a):.2e} Ohm'
-
-        # Plot figures
-        self.plot_figure([V_data,V_data],[I_data,I_fit],['I-V data','I-V fitting'],'V(V)','I(A)',title='I-V curve',plot_filename='I-Vcurve',style=['dot','line'],text_message=text_message)
+        self.plot_data(unit_convert,self.identity,self.identity,self.linear,[1.,1.],['V(V)','V(V)'],['I(A)','I(A)'],['I-V data','I-V curve'],['I-V data','I-V fitting'],text_func=text_func)
 
     def plot_MR(self):
-        I_data = self.data[:,self.I_col]
-        R_data = self.data[:,self.R_col]
+        self.x_col = self.I_col
+        self.y_col = self.R_col
+        unit_convert = [200.0,self.LockingRatio]
+
+        def subtraction(x,y):
+            z = []
+            for i in range(len(x)):
+                z.append(x[i] - y[i])
+            return z
+
+        if self.original:
+            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR fitting'])
+        
+        elif not self.bool_out_of_plane:
+            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR fitting'],data_point_style='line')
+
+        elif self.bool_out_of_plane and not self.original:
+            B, MR_raw, MR_para = self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR fitting'])
+        
+            #   Fit Hanle signal
+            Hanle_data = subtraction(MR_raw , MR_para)
+            unit_convert = [1.,1.]
+
+            def text_func(x):
+                return f'relaxation time = {x:.2e}sec'
+            
+            self.plot_data(unit_convert,self.identity,self.identity,self.Hanle_effect,[1e-10,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['Hanle Signal','Hanle Signal & Fitting'],['Hanle Signal','Hanle Signal & Fitting'],give_other_data=True,datax=B,datay=Hanle_data,text_func=text_func)
+
+    def plot_Raman(self):
+        self.x_col = self.rs_col
+        self.y_col = self.int_col
+        unit_convert = [1.0,1.0]
+        
+        self.original = True
+        self.plot_data(unit_convert,self.identity,self.identity,self.identity,[1.],['raman shift(1/cm)'],['Intensity'],['Raman Spectrum'],['RamanSpectrum'],data_point_style='line')
+
+    #   Data processing and figure making
+    def plot_data(self,unit_convert,x_func,y_func,z_func,p0,x_labels,y_labels,titles,fignames,give_other_data=False,datax=[],datay=[],text_func=None,data_point_style='dot'):
+        x_data_all = []
+        y_data_all = []
+        N = len(self.data)
+        for i in range(N):
+            x_data = self.data[i][:,self.x_col]*unit_convert[0]
+            y_data = self.data[i][:,self.y_col]*unit_convert[1]
+            x_data_all.append(x_data)
+            y_data_all.append(y_data)
+        
+        if give_other_data:
+            x_data_all = datax
+            y_data_all = datay
 
         # Plot original data
         if self.original:
-            self.plot_figure([I_data],[R_data],['B-MR data'],'B(Gauss)','R(Ohm)',title='B-MR curve',plot_filename='B-MRcurve',style=['dot'])
+            self.plot_figure(x_data_all,y_data_all,self.labels,x_labels[0],y_labels[0],title=titles[0],figname=fignames[0],style=[data_point_style]*N)
             return
+
+        x_new = []
+        y_new = []
+        y_fit = []
+        fit_labels = []
         
-        # Eliminate outliers
-        I_data, R_data = self.eliminate_outliers(I_data,R_data,threshold = 3.)
-        I_data, R_data = self.eliminate_outliers(I_data,R_data,threshold = 3.)
-        I_data, R_data = self.sort_x_y(I_data,R_data)
+        
+        for i in range(N):
+            # Eliminate outliers
+            x_data_all[i] , y_data_all[i] = self.sort_x_y(x_data_all[i],y_data_all[i])
+            x_data_all[i] , y_data_all[i] = self.eliminate_outliers(x_data_all[i],y_data_all[i])
 
-        # Unit conversion (B_field: Gauss, R_data: Ohm)
-        B_field = I_data * self.BI_conver_ratio
-        R_data = R_data * self.LockingRatio
+            # Fit the ACR function of T-R curve
+            x_new0 = x_func(x_data_all[i])
+            y_new0 = y_func(y_data_all[i])
 
-        if self.bool_out_of_plane:
-            #   Fit the data
-            choose_plot_range = ['both','left','right']
-            for i in range(len(choose_plot_range)):
-                Bz, R_parabolic_background, R_Hanle, R_fit, taus_message = self.fit_hanle_signal(B_field,R_data,left_or_right=choose_plot_range[i])
-                text_message = taus_message
-                if i ==0:
-                    self.plot_figure([B_field,B_field],[R_data,R_parabolic_background],['Original Data','Parabolic Background'],'Bz(Gauss)','Resistance(Omega)',title='B-MR curve',plot_filename='B-MRcurve',style=['dot','line'],text_message=text_message)
-                self.plot_figure([Bz,Bz],[R_Hanle,R_fit],['Hanle Signal','Hanle Fitting'],'Bz(Gauss)','Resistance(Omega)',title='Hanle signal vs. Hanle fitting',plot_filename='HanleSignalFitting_'+choose_plot_range[i],style=['dot','line'],text_message=text_message)
+            if self.plot_func == 'plot_MR' and z_func == self.parabolic_func and np.max(np.abs(x_new0))>=2000:
+                xf, yf = self.give_some_range_of_data(x_new0,y_new0,value_range=[-7500,7500])
+                xf, yf = self.give_some_range_of_data(xf,yf,value_range=[-1000,1000],reverse=True)
+                
+                popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),xf,yf,p0=p0)
+                y_fit0 = z_func(x_new0,*popt)
 
-        else:
-            self.plot_figure([B_field],[R_data],['B-MR data'],'B(Gauss)','R(Ohm)',title='B-MR curve',plot_filename='B-MRcurve',style=['dot'])
+            elif self.plot_func == 'plot_MR' and z_func == self.parabolic_func and np.max(np.abs(x_new0))<2000:
+                y_fit0 = np.min(y_new0)*np.ones(len(y_new0))
+                
+
+            elif self.plot_func == 'plot_MR' and z_func == self.Hanle_effect:
+                x_new0,y_new0 = self.give_some_range_of_data(x_new0,y_new0,value_range=[-1000,1000])
+                popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
+                y_fit0 = z_func(x_new0,*popt)
+            
+            elif self.plot_func == 'plot_ACR_Monitor':
+                x_new0,y_new0 = self.give_some_range_of_data(x_new0,y_new0,value_range=[1/150.,1/20.])
+                popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
+                y_fit0 = z_func(x_new0,*popt)
+
+            else:
+                popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
+                y_fit0 = z_func(x_new0,*popt)
+
+            y_fit.append(y_fit0)
+            x_new.append(x_new0)
+            y_new.append(y_new0)
+            
+            # Text message telling band gap energy
+                        
+            try:
+                fit_labels.append(self.labels[i]+' fitting, '+text_func(np.abs(popt[0])))
+            except:
+                fit_labels.append('')
+                
+
+        # Plot figures
+        self.plot_figure(x_new+x_new,y_new+y_fit,self.labels+fit_labels,x_labels[1],y_labels[1],title=titles[1],figname=fignames[1],style=[data_point_style]*N+['line']*N)
+        self.plot_figure(x_data_all,y_data_all,self.labels,x_labels[0],y_labels[0],title=titles[0],figname=fignames[0],style=[data_point_style]*N)
+
+        return x_new,y_new,y_fit
 
     def ProcessData(self):
         #   Preliminary setup
@@ -326,3 +335,7 @@ class DataProcessor:
             self.plot_ACR_Monitor()
         elif self.plot_func == 'plot_IV':
             self.plot_IV()
+        elif self.plot_func == 'plot_Raman':
+            self.plot_Raman()
+        else:
+            print('Plotting function error!')
