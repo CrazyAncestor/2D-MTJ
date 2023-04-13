@@ -15,6 +15,9 @@ class QATK_CodeGenerator:
         self.CrystalPlaneStacking = kwargs.get('CrystalPlaneStacking',[['A','B','C'],['A','B','C']])
         self.BarrierPlaneStacking = kwargs.get('BarrierPlaneStacking',['A'])
 
+        self.FMOxide = kwargs.get('FMOxide',0)
+        self.script_dir = kwargs.get('script_dir','./')
+
         #   Set element specific parameters
         self.ele1_comma = str(self.ele1)+", "
         self.ele2_comma = str(self.ele2)+", "
@@ -55,6 +58,28 @@ class QATK_CodeGenerator:
         elif self.ParaorAnti == "Anti":
             self.spin2 = "-1.0 "
             self.spincomma2 = "-1.0, "
+
+        #   Set oxide related parameters
+        if self.FMOxide!=0:
+            self.BasisSet += "GGABasis.Oxygen_DoubleZetaPolarized,"
+            
+        if self.FMOxide==0:
+            self.ele_surface1 = self.ele1_comma
+            self.ele_surface2 = self.ele2_comma
+            self.spin_surface1 = self.spincomma1
+            self.spin_surface2 = self.spincomma2
+
+        elif self.FMOxide==1:
+            self.ele_surface1 = "Oxygen,"
+            self.ele_surface2 = self.ele2_comma
+            self.spin_surface1 = "0.0,"
+            self.spin_surface2 = self.spincomma2
+        
+        elif self.FMOxide==2:
+            self.ele_surface1 = "Oxygen,"
+            self.ele_surface2 = "Oxygen,"
+            self.spin_surface1 = "0.0,"
+            self.spin_surface2 = "0.0,"
         
         #   Set crystal layer numbers
         self.Left_FMLayerNum = len(self.CrystalPlaneStacking[0])
@@ -64,9 +89,12 @@ class QATK_CodeGenerator:
         #   Set atom number in central arae
         self.Total_Central_AtomNum = self.Left_FMLayerNum*2+self.Right_FMLayerNum*2+self.TwoDMat_UnitCell_AtomNum*self.Barrier_LayerNum
 
-
         #   Set output filename
         self.Filename = self.ParaorAnti + self.ele1 + self.barrier + self.ele2
+        if self.FMOxide == 1:
+            self.Filename = "Oxide" + self.Filename
+        elif self.FMOxide == 2:
+            self.Filename = "BothOxide" + self.Filename
 
         #   Set atom coordinates
         self.left_electrode_atoms, self.right_electrode_atoms, self.central_atoms, self.lattice_z = self.set_coordinates()
@@ -190,7 +218,7 @@ class QATK_CodeGenerator:
 
 
     def generate_python_code_file(self,filename,code_text):
-        pythonfile = filename+".py"
+        pythonfile = self.script_dir + '/' + filename+".py"
         # Open a file for writing
         with open(pythonfile, "w") as f:
             # Write some sample code to the file
@@ -271,9 +299,9 @@ vector_c = [0.0, 0.0, {self.lattice_z}]*Angstrom
 central_region_lattice = UnitCell(vector_a, vector_b, vector_c)
 
 # Define elements
-central_region_elements = [{self.ele1_comma *self.Left_FMLayerNum*2}
+central_region_elements = [{self.ele1_comma *(self.Left_FMLayerNum*2-1)}{self.ele_surface1}
                         {self.cent_ele *self.Barrier_LayerNum}
-                        {self.ele2_comma *(self.Right_FMLayerNum*2-1)}{self.ele2}]
+                        {self.ele_surface2}{self.ele2_comma *(self.Right_FMLayerNum*2-2)}{self.ele2}]
 
 # Define coordinates
 central_region_coordinates = {self.central_atoms}*Angstrom
@@ -390,9 +418,9 @@ device_configuration.setCalculator(calculator)
 # -------------------------------------------------------------
 # Initial State
 # -------------------------------------------------------------
-initial_spin = InitialSpin(scaled_spins=[{self.spincomma1 *self.Left_FMLayerNum*2} 
+initial_spin = InitialSpin(scaled_spins=[{self.spincomma1 *(self.Left_FMLayerNum*2-1)} {self.spin_surface1}
                                         {'0.0, ' *self.Barrier_LayerNum*self.TwoDMat_UnitCell_AtomNum}  
-                                        {self.spincomma2 *(self.Right_FMLayerNum*2-1)} {self.spin2}])
+                                        {self.spin_surface2}{self.spincomma2 *(self.Right_FMLayerNum*2-2)} {self.spin2}])
 device_configuration.setCalculator(
     calculator,
     initial_spin=initial_spin,

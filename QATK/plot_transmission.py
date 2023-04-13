@@ -2,29 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
-def write_transmissionfile(filename):
-    # -------------------------------------------------------------
-    # Load device configuration
-    # -------------------------------------------------------------
-    transmission_spectrum = nlread(filename+'.hdf5', TransmissionSpectrum)[0]
-    spin_name = ["Up","Down"]
-    spins = [Spin.Up,Spin.Down] 
-
-    #   Write data
-    for s in range(len(spin_name)):
-        with open(spin_name[s]+'transmission_'+filename+'.txt', "w") as file:
-
-            data = transmission_spectrum.transmission(spin = spins[s])
-            energies = transmission_spectrum.energies()
-            kpoints = transmission_spectrum.kpoints()
-
-            file.write("Transmission coefficient of spin component " + spin_name[s] +"\n")
-            for i in range(data.shape[0]):
-                file.write('Transmission at energy = %12.6f eV \n' % (energies[i].inUnitsOf(eV)))
-                file.write('      kx         ky      transmission \n')
-                for j in range(data.shape[1]):
-                    file.write('%10.4f %10.4f %16.6e\n' % (kpoints[j][0],kpoints[j][1],data[i][j]))
-
 def plot_trans(filename,data_dir,plot_dir,ext='.png',value_max=1.0):
     
     spin_name = ["Up","Down"]
@@ -60,23 +37,13 @@ def plot_trans(filename,data_dir,plot_dir,ext='.png',value_max=1.0):
         fig.savefig(plot_dir+spin_name[s]+filename+ext)
 
 if __name__ == '__main__':
-    data_dir = sys.argv[1]
-    plot_dir = sys.argv[2]
-    structure = sys.argv[3]
-
-    #   Write the transmission coeffiecients into files
-    WRITE_DATA = False
-
-    if WRITE_DATA:
-        parafile = data_dir+'Para'+structure
-        antifile = data_dir+'Anti'+structure
-
-        write_transmissionfile(parafile)
-        write_transmissionfile(antifile)
+    data_dir = './'
+    plot_dir = 'Transmission_Spectra/'
+    structure = sys.argv[1]
 
     #   Plot the transmission results
-    trans_max = sys.argv[4]
-    ext = sys.argv[5]
+    trans_max = sys.argv[2]
+    ext = sys.argv[3]
     
     filename1 = "transmission_Para"+structure
     filename2 = "transmission_Anti"+structure

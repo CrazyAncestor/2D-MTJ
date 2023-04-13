@@ -1,11 +1,14 @@
+structure_para = ''
+structure_anti = ''
+
 # Calculate conductance for parallel spin
-transmission_para = nlread('ParaCobaltGrCobalt.hdf5', TransmissionSpectrum)[0]
+transmission_para = nlread(structure_para + '.hdf5', TransmissionSpectrum)[0]
 conductance_para_uu = transmission_para.conductance(spin=Spin.Up)
 conductance_para_dd = transmission_para.conductance(spin=Spin.Down)
 conductance_para = conductance_para_uu + conductance_para_dd
 
 # Calculate conductance for anti-parallel spin
-transmission_anti = nlread('AntiCobaltGrCobalt.hdf5', TransmissionSpectrum)[0]
+transmission_anti = nlread(structure_anti + '.hdf5', TransmissionSpectrum)[0]
 conductance_anti_uu = transmission_anti.conductance(spin=Spin.Up)
 conductance_anti_dd = transmission_anti.conductance(spin=Spin.Down)
 conductance_anti = conductance_anti_uu + conductance_anti_dd
