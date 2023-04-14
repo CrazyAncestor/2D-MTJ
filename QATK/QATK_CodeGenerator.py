@@ -173,16 +173,30 @@ class QATK_CodeGenerator:
             return np.array(coord_list)
 
         def set_barrier_atom(plane_type,barrier_atom_base):
-            coord_list = []
             for i in range(len(plane_type)):
-                if plane_type[i]=='A':
-                    bab = np.copy(barrier_atom_base)
-                    coord_list.append(bab)
-                elif plane_type[i]=='B':
-                    bab = np.copy(-barrier_atom_base)
-                    bab = displace(bab,np.array(self.a,self.b,0.))
-                    coord_list.append(bab)
-            return np.array(coord_list)
+                if i == 0:
+                    if plane_type[i]=='A':
+                        bab = np.copy(barrier_atom_base)
+                        
+                    elif plane_type[i]=='B':
+                        bab = np.copy(-barrier_atom_base)
+                        bab = displace(bab,np.array([self.a,self.b,0.]))
+
+                    bab = displace(bab, np.array([0.,0.,i*self.two_D_spacing]))
+                    coord_list = np.copy(bab)
+
+                else:
+                    if plane_type[i]=='A':
+                        bab = np.copy(barrier_atom_base)
+                        
+                    elif plane_type[i]=='B':
+                        bab = np.copy(-barrier_atom_base)
+                        bab = displace(bab,np.array([self.a,self.b,0.]))
+                        
+                    bab = displace(bab, np.array([0.,0.,i*self.two_D_spacing]))
+                    coord_list = np.concatenate((coord_list,np.copy(bab)))
+                    
+            return coord_list
 
         left_electrode_atoms = set_FM_crystal_atom([central_left_FM_plane_type[0]])
         central_left_atoms = set_FM_crystal_atom(central_left_FM_plane_type)
