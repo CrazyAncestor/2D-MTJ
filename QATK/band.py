@@ -114,7 +114,7 @@ TwoD_barrier = 'Gr'
 AntiPara = 'Para'
 kp_num = 50
 energy_value = 2.0
-elements_carbon = [Carbon]
+elements = [Carbon]
 angular_momenta = [1]
 plotting_max = 0.2
 
