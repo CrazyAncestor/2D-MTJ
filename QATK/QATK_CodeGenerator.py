@@ -198,11 +198,11 @@ class QATK_CodeGenerator:
                     
             return coord_list
 
-        left_electrode_atoms = set_FM_crystal_atom([central_left_FM_plane_type[0]])
+        left_electrode_atoms = set_FM_crystal_atom([central_left_FM_plane_type[0],central_left_FM_plane_type[1],central_left_FM_plane_type[2]])
         central_left_atoms = set_FM_crystal_atom(central_left_FM_plane_type)
         central_right_atoms = set_FM_crystal_atom(central_right_FM_plane_type)
         central_barrier_atoms = set_barrier_atom(self.BarrierPlaneStacking,barrier_atom_base)
-        right_electrode_atoms = set_FM_crystal_atom([central_right_FM_plane_type[-1]])
+        right_electrode_atoms = set_FM_crystal_atom([central_right_FM_plane_type[-3],central_right_FM_plane_type[-2],central_right_FM_plane_type[-1]])
 
         left_electrode_atoms = displace(left_electrode_atoms , zb/2.)
         central_left_atoms = displace(central_left_atoms , zb/2.)
@@ -261,7 +261,7 @@ vector_c = [0.0, 0.0, {self.c}]*Angstrom
 left_electrode_lattice = UnitCell(vector_a, vector_b, vector_c)
 
 # Define elements
-left_electrode_elements = [{self.ele1_comma} {self.ele1}]
+left_electrode_elements = [{self.ele1_comma*5} {self.ele1}]
 
 # Define coordinates
 left_electrode_coordinates = {self.left_electrode_atoms}*Angstrom
@@ -287,7 +287,7 @@ vector_c = [0.0, 0.0, {self.c}]*Angstrom
 right_electrode_lattice = UnitCell(vector_a, vector_b, vector_c)
 
 # Define elements
-right_electrode_elements = [{self.ele2_comma} {self.ele2}]
+right_electrode_elements = [{self.ele2_comma*5} {self.ele2}]
 
 # Define coordinates
 right_electrode_coordinates = {self.right_electrode_atoms}*Angstrom
