@@ -52,10 +52,10 @@ def fit_hanle_signal(data,Bz_colnum=2,R_colnum=3):
     # Give the magnetic field and signal
     Bz = data[:,Bz_colnum]
     R_OriData = data[:,R_colnum]
-    
+    Signal_range = 2000
     # Filter out the parabolic background
     if np.max(Bz)>2000:
-        x1,y1 = give_some_range_of_data(Bz,R_OriData,[-2000,2000],reverse=True)
+        x1,y1 = give_some_range_of_data(Bz,R_OriData,[-2500,2500],reverse=True)
         popt, pcov = curve_fit(parabolic_func, x1, y1)
 
         a, b, c = popt
@@ -63,32 +63,36 @@ def fit_hanle_signal(data,Bz_colnum=2,R_colnum=3):
         R_Hanle_signal = R_OriData - R_parabolic_background
 
         # Fit the value of relax time in Hanle signals with Lorentzian model
+        Bz_hanle,R_Hanle_signal = give_some_range_of_data(Bz,R_Hanle_signal,[-Signal_range,Signal_range])
         r0i = 1.
         tausi = 1/(g*muB/hbar)
         p0 = [r0i,tausi]
-        popt2, pcov2 = curve_fit(Hanle_effect, Bz, R_Hanle_signal,p0=p0)
+        popt2, pcov2 = curve_fit(Hanle_effect, Bz_hanle, R_Hanle_signal,p0=p0)
         r0, taus = popt2
-        R_fit_LorentzianModel = Hanle_effect(Bz,r0,taus)
+        taus = np.abs(taus)
+        R_fit_LorentzianModel = Hanle_effect(Bz_hanle,r0,taus)
         
         # Plot the results
         plot_figure(Bz,[R_OriData,R_parabolic_background],['Original Data','Parabolic Background'],'Bz(Gauss)','Resistance(Omega)','Ori_Data vs. Para Background','OriData_ParabolicBackground.png',-1)
-        plot_figure(Bz,[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'Bz(Gauss)','Resistance(Omega)','Hanle signal vs. Hanle fitting','HanleSignalFitting.png',taus)
+        plot_figure(Bz_hanle,[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'Bz(Gauss)','Resistance(Omega)','Hanle signal vs. Hanle fitting','HanleSignalFitting.png',taus)
 
     else:
         R_background = np.min(R_OriData)*np.ones(len(R_OriData))
         R_Hanle_signal = R_OriData - R_background
 
         # Fit the value of relax time in Hanle signals with Lorentzian model
+        Bz_hanle,R_Hanle_signal = give_some_range_of_data(Bz,R_Hanle_signal,[-Signal_range,Signal_range])
         r0i = 1.
         tausi = 1/(g*muB/hbar)
         p0 = [r0i,tausi]
-        popt2, pcov2 = curve_fit(Hanle_effect, Bz, R_Hanle_signal,p0=p0)
+        popt2, pcov2 = curve_fit(Hanle_effect, Bz_hanle, R_Hanle_signal,p0=p0)
         r0, taus = popt2
-        R_fit_LorentzianModel = Hanle_effect(Bz,r0,taus)
+        taus = np.abs(taus)
+        R_fit_LorentzianModel = Hanle_effect(Bz_hanle,r0,taus)
         
         # Plot the results
         plot_figure(Bz,[R_OriData,R_background],['Original Data','Background'],'Bz(Gauss)','Resistance(Omega)','Ori_Data vs. Background','OriData_Background.png',-1)
-        plot_figure(Bz,[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'Bz(Gauss)','Resistance(Omega)','Hanle signal vs. Hanle fitting','HanleSignalFitting.png',taus)
+        plot_figure(Bz_hanle,[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'Bz(Gauss)','Resistance(Omega)','Hanle signal vs. Hanle fitting','HanleSignalFitting.png',taus)
 
 
 
