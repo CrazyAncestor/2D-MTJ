@@ -45,6 +45,8 @@ def give_parameters(AntiPara,FM_ele1,FM_ele2,TwoD_barrier,kp_num,elements,angula
 
     if elements[0]==Carbon:
         elements_name = 'Carbon'
+    elif elements[0]==Cobalt:
+        elements_name = 'Cobalt'
     elif elements[0]==Boron and elements[1]==Nitrogen:
         elements_name = 'BN'
     elif elements[0]==Molybdenum and elements[1]==Sulfur:
