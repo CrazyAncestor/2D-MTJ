@@ -70,7 +70,7 @@ class BandStructurePlotter:
             X_Data, Y_Data, Spectrum_Data, Segments, Segment_labels = self.read_file(spin_name[s]+self.input_filename)
             Route = X_Data
             Energy = Y_Data
-            #Energy = np.flip(Energy)
+            Energy = np.flip(Energy)
             band_diagram = np.flip(np.array(Spectrum_Data))
             for i in range(len(band_diagram)):
                 band_diagram[i] = np.flip(band_diagram[i])
