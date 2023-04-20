@@ -45,8 +45,6 @@ def give_parameters(AntiPara,FM_ele1,FM_ele2,TwoD_barrier,kp_num,elements,angula
 
     if elements[0]==Carbon:
         elements_name = 'Carbon'
-    elif elements[0]==Cobalt:
-        elements_name = 'Cobalt'
     elif elements[0]==Boron and elements[1]==Nitrogen:
         elements_name = 'BN'
     elif elements[0]==Molybdenum and elements[1]==Sulfur:
@@ -97,8 +95,6 @@ def write_SurfaceBandstructurefile(inputfile,outputfile):
     #print data
     for s in range(len(spin_name)):
         with open(spin_name[s]+outputfile, "w") as file:
-
-            data = 10#SurfaceBandstructure_spectrum.zData(spin = spins[s])
             energies = SurfaceBandstructure_spectrum.energies()
             kpoints = SurfaceBandstructure_spectrum.kpoints()
             ss = SurfaceBandstructure_spectrum.evaluate(spins[s])
@@ -127,11 +123,9 @@ band_analysis(structure,HDF5_Output,K_points,energy_value,atoms=None, elements=e
 
 #   Export band data
 TXT_Output = 'BandStructure_'+structure+elements_name+angular_momenta_name+'.txt'
-write_SurfaceBandstructurefile(HDF5_Output,K_points,TXT_Output)
+write_SurfaceBandstructurefile(HDF5_Output,TXT_Output)
 
 
 #   Plot band structure
 fig_name = structure+elements_name+angular_momenta_name+'.png'
-a = BandStructurePlotter(fig_dir='band',input_filename='Up'+TXT_Output,output_filename='Up'+fig_name,max_value=plotting_max)
-b = BandStructurePlotter(fig_dir='band',input_filename='Down'+TXT_Output,output_filename='Down'+fig_name,max_value=plotting_max)
-
+a = BandStructurePlotter(fig_dir='band',input_filename=TXT_Output,output_filename=fig_name,energy_range=[-energy_value,energy_value],max_value=plotting_max)
