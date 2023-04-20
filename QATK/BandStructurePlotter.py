@@ -15,89 +15,47 @@ class BandStructurePlotter:
 
         self.fig_dir = kwargs.get('fig_dir', 'data_fig')
         self.input_filename = kwargs.get('input_filename', 'BandStructure.txt')
+        self.output_filename = kwargs.get('output_filename', 'BandStructure')
+        self.energy_range = kwargs.get('energy_range', [-2.0,2.0])
         self.max_value = kwargs.get('max_value', 1.0)
+        self.min_value = kwargs.get('min_value', 0.0)
+        self.need_sum = kwargs.get('need_sum', False)
         self.ext = kwargs.get('ext', '.png')
 
         self.PlotBandStructure()
 
 
     def read_file(self,filename):
+       
         
-        def find_xyn(string,pattern):
-
-            # Find all matches of the pattern in the string
-            matches = re.findall(pattern, string)
-            if matches:
-                if type(matches[0]) == tuple:
-                    num = int(matches[0][0])
-                else:
-                    num = int(matches[0])
-                return num
-            else:
-                return 0
         
-        def appending_data(lines,line_id,tot_n):
-            data = []
-            for i in range(tot_n):
-                line = lines[line_id+2+i]
-                temp = [float(x.strip()) for x in line.split(',')]
-                if len(temp)==1:
-                    data.append(temp[0])
-                else:
-                    data.append(temp)
-            return data
-
-        #   Read the file
+        # Open the file for reading
         with open(filename, 'r') as f:
-            file_lines = f.readlines()
-        
-        #   Clean out nothing lines
-        data_lines = []
-        
-        for i in range (len(file_lines)):
-            line = file_lines[i]
-            if line!='\n':
-                data_lines.append(line)
-        
-        #   Extact spectrum data
+            # Read the contents of the file
+            contents = f.readlines()
 
-        def extract_data(head,pattern):
-            line_id = []
-            row_num = []
-            for i in range (len(data_lines)):
-                line = data_lines[i]
-                if line.startswith(head):
-                    line_id.append(i)
-                    row_num.append(find_xyn(str(line),pattern))
-            data =[]
-            if len(line_id)!=3:
-                print('Data Error! Must contain all three spectra!')
-                return
-            for i in range(len(line_id)):
-                data.append(appending_data(data_lines,line_id[i],row_num[i]))
-            
-            return data
+            # Initialize an empty list to store the integers
+            Spectrum_Data = []
+            temp = []
+
+            # Iterate over each line in the contents
+            for line in contents:
+                # Split the line into individual values
+                values = line.split()
+                
+                # Convert the values to integers and add them to the list
+                temp.append([float(v) for v in values])
+
+            for i in range(len(temp[0])):
+                Spectrum_Data.append(np.array(temp)[:,i])
+            # Print the resulting list of integers
+            print(len(Spectrum_Data),len(Spectrum_Data[0]))
         
-        def extract_segment_x(x_list,val):
+        X_Data = np.arange(len(Spectrum_Data[0]))
+        Y_Data = np.linspace(self.energy_range[0],self.energy_range[1],len(Spectrum_Data))
 
-            # Find the index of the closest element in x_list to val
-            idx = np.abs(np.array(x_list) - val).argmin()
-
-            return idx
-        
-        X_Data = extract_data('xData [', r"\[(\d+)\]") 
-        Y_Data = extract_data('yData [', r"\[(\d+)\]") 
-        Spectrum_Data = extract_data('zData',r"\[(\d+) by (\d+)\]")
-
-        G = 0.
-        X = 0.3333
-        Y = 1.0
-
-        Segment_labels = []
-        Segments = []
-        for i in range(len(X_Data)):
-            Segment_labels.append(['G', 'K', 'M'])
-            Segments.append([extract_segment_x(X_Data[i],G), extract_segment_x(X_Data[i],X), extract_segment_x(X_Data[i],Y)])
+        Segment_labels = ['\u0393', 'K', 'M']
+        Segments = [0,int(len(X_Data)/2),len(X_Data)]
 
         return X_Data, Y_Data, Spectrum_Data, Segments, Segment_labels
 
@@ -106,37 +64,39 @@ class BandStructurePlotter:
         if not os.path.exists(self.fig_dir):
             os.makedirs(self.fig_dir)
         
-        X_Data, Y_Data, Spectrum_Data, Segments, Segment_labels = self.read_file(self.input_filename)
-        spin_name = ["Sum","Up","Down"]
+        spin_name = ["Up","Down"]
         
         for s in range(len(spin_name)):
 
-            Route = X_Data[s]
-            Energy = Y_Data[s]
-            Energy = np.flip(Energy)
-            band_diagram = np.flip(np.array(Spectrum_Data[s]))
+            X_Data, Y_Data, Spectrum_Data, Segments, Segment_labels = self.read_file(spin_name[s]+self.input_filename)
+            Route = X_Data
+            Energy = Y_Data
+            #Energy = np.flip(Energy)
+            band_diagram = np.flip(np.array(Spectrum_Data))
             for i in range(len(band_diagram)):
                 band_diagram[i] = np.flip(band_diagram[i])
 
             # plot the data
-            fig, ax = plt.subplots(figsize=(6, 6*int(len(Energy)/len(Route))))
-            data_content = ax.imshow(band_diagram, cmap='viridis', vmax = self.max_value)
-            
-            # set x-label
-            route_pos = Segments[s]
-            ax.set_xticks(route_pos)
-            ax.set_xticklabels(Segment_labels[s])
+            fig, ax = plt.subplots(figsize=(10,8))
+            data_content = ax.imshow(band_diagram, cmap='Blues', vmax = self.max_value, vmin = self.min_value,aspect = len(Route)/len(Energy)*8/10.)
             
             # set y-label
             Energy_pos = [0,int(len(Energy)/4.),int(len(Energy)/2.),int(len(Energy)*3./4.),len(Energy)-1]
             ax.set_yticks(Energy_pos)
             ax.set_yticklabels(np.array(Energy)[Energy_pos])
 
-            # add a label to the point (3,6)
+            # set x-label
+            route_pos = Segments
+            ax.set_xticks(route_pos)
+            ax.set_xticklabels(Segment_labels)
+            
+            
+            # add a label to the point 
             ax.scatter(int(len(Route)/2.), int(len(Energy)/2.), marker='*', s=100, color='red',label='(K-point, Fermi-energy)')
             ax.legend()
 
             ax.set_xlabel('')
             ax.set_ylabel('Energy (eV)')
             cbar = fig.colorbar(data_content, label = 'band structure (1/eV)',ax=ax)
-            fig.savefig(self.fig_dir + '/' + spin_name[s] + ' Spin Band Diagram' + self.ext)
+
+            fig.savefig(self.fig_dir + '/BandStructure_' + spin_name[s] + self.output_filename + self.ext)
