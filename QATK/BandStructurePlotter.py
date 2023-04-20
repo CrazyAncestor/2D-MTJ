@@ -20,7 +20,6 @@ class BandStructurePlotter:
         self.max_value = kwargs.get('max_value', 1.0)
         self.min_value = kwargs.get('min_value', 0.0)
         self.need_sum = kwargs.get('need_sum', False)
-        self.ext = kwargs.get('ext', '.png')
 
         self.PlotBandStructure()
 
@@ -99,4 +98,4 @@ class BandStructurePlotter:
             ax.set_ylabel('Energy (eV)')
             cbar = fig.colorbar(data_content, label = 'band structure (1/eV)',ax=ax)
 
-            fig.savefig(self.fig_dir + '/BandStructure_' + spin_name[s] + self.output_filename + self.ext)
+            fig.savefig(self.fig_dir + '/BandStructure_' + spin_name[s] + self.output_filename)
