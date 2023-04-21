@@ -53,7 +53,7 @@ def give_parameters(AntiPara,FM_ele1,FM_ele2,TwoD_barrier,kp_num,elements,angula
         elif elements[0]==Sulfur:
             elements_name = 'Sulfur'
     elif len(elements)==2:
-        elif elements[0]==Boron and elements[1]==Nitrogen:
+        if elements[0]==Boron and elements[1]==Nitrogen:
             elements_name = 'BN'
         elif elements[0]==Molybdenum and elements[1]==Sulfur:
             elements_name = 'MoS2'
