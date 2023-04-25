@@ -28,6 +28,7 @@ class DataProcessor:
 
         self.bool_out_of_plane = kwargs.get('bool_out_of_plane', True)
         self.BI_conver_ratio = kwargs.get('BI_conver_ratio', 200.)
+        self.SourceVoltage = kwargs.get('SourceVoltage', -7.)
         self.Hanle_Signal_Range = kwargs.get('Hanle_Signal_Range', 1000.)
         
         self.V_col = kwargs.get('V_col',0)
@@ -128,6 +129,12 @@ class DataProcessor:
         x_sorted = x[sort_indices]
         y_sorted = y[sort_indices]
         return np.array(x_sorted),np.array(y_sorted)
+    
+    def get_rid_of_zero(self, x, y):
+        nonzero_indices = np.nonzero(y)
+        x_filtered = x[nonzero_indices]
+        y_filtered = y[nonzero_indices]
+        return np.array(x_filtered),np.array(y_filtered)
 
     def give_some_range_of_data(self, x, y, value_range, reverse=False):
         data_range = np.where(np.logical_and(x > value_range[0], x < value_range[1]))[0]
@@ -185,6 +192,17 @@ class DataProcessor:
         
         self.plot_data(unit_convert,self.inverse,self.log,self.linear,[1.,1.],['Temp(K)','1/T(1/K)'],['R(Ohm)','log R'],['R-Temp curve','Boltzman Model fitting of R-Temp'],['R-Temp data','R-T fitting'],text_func=text_func)
     
+    def plot_DCR_Monitor(self):
+        unit_convert = [1.0,self.SourceVoltage]
+        self.x_col = self.T_col
+        self.y_col = self.I_col
+
+        def text_func(x):
+            return f'Band Gap = {(x/11606*1e3):.2e} meV'
+        
+        self.plot_data(unit_convert,self.inverse,self.log,self.linear,[1.,1.],['Temp(K)','1/T(1/K)'],['R(Ohm)','log R'],['R-Temp curve','Boltzman Model fitting of R-Temp'],['R-Temp data','R-T fitting'],text_func=text_func)
+
+
     def plot_IV(self):
         unit_convert = [1.0,1.0]
         self.x_col = self.V_col
@@ -193,7 +211,7 @@ class DataProcessor:
         def text_func(x):
             return f'Resistance = {(1/x):.2e} Ohm'
         
-        self.plot_data(unit_convert,self.identity,self.identity,self.linear,[1.,1.],['V(V)','V(V)'],['I(A)','I(A)'],['I-V data','I-V curve'],['I-V data','I-V fitting'],text_func=text_func)
+        self.plot_data(unit_convert,self.identity,self.identity,self.linear,[1.,1.],['V(V)','V(V)'],['I(A)','I(A)'],['I-V data','I-V curve'],['I-V data','I-V fitting'],text_func=text_func,data_point_style='line')
 
     def plot_MR(self):
         self.x_col = self.I_col
@@ -222,7 +240,7 @@ class DataProcessor:
             def text_func(x):
                 return f'relaxation time = {x:.2e}sec'
             
-            self.plot_data(unit_convert,self.identity,self.identity,self.Hanle_effect,[1e-10,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['Hanle Signal','Hanle Signal & Fitting'],['Hanle Signal','Hanle Signal & Fitting'],give_other_data=True,datax=B,datay=Hanle_data,text_func=text_func)
+            self.plot_data(unit_convert,self.identity,self.identity,self.Hanle_effect,[1e-10,1.],['B(B)','B(G)'],[r'$\Delta R(Ohm)$',r'$\Delta R(Ohm)$'],['Hanle Signal','Hanle Signal & Fitting'],['Hanle Signal','Hanle Signal & Fitting'],give_other_data=True,datax=B,datay=Hanle_data,text_func=text_func)
 
     def plot_Raman(self):
         self.x_col = self.rs_col
@@ -237,11 +255,22 @@ class DataProcessor:
         x_data_all = []
         y_data_all = []
         N = len(self.data)
-        for i in range(N):
-            x_data = self.data[i][:,self.x_col]*unit_convert[0]
-            y_data = self.data[i][:,self.y_col]*unit_convert[1]
-            x_data_all.append(x_data)
-            y_data_all.append(y_data)
+
+        if self.plot_func=='plot_DCR_Monitor':
+            for i in range(N):
+                x_data, y_data = self.get_rid_of_zero(self.data[i][:,self.x_col],self.data[i][:,self.y_col])
+                y_data = 1/y_data
+                x_data *= unit_convert[0]
+                y_data *= unit_convert[1]
+                x_data_all.append(x_data)
+                y_data_all.append(y_data)
+
+        else:
+            for i in range(N):
+                x_data = self.data[i][:,self.x_col]*unit_convert[0]
+                y_data = self.data[i][:,self.y_col]*unit_convert[1]
+                x_data_all.append(x_data)
+                y_data_all.append(y_data)
         
         if give_other_data:
             x_data_all = datax
@@ -288,6 +317,10 @@ class DataProcessor:
                 popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
                 y_fit0 = z_func(x_new0,*popt)
 
+            elif self.plot_func == 'plot_DCR_Monitor':
+                popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
+                y_fit0 = z_func(x_new0,*popt)
+
             else:
                 popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
                 y_fit0 = z_func(x_new0,*popt)
@@ -316,6 +349,9 @@ class DataProcessor:
             self.R_col = 5
         elif self.plot_func == 'plot_ACR_Monitor':
             self.R_col = 6
+        elif self.plot_func == 'plot_DCR_Monitor':
+            self.I_col = 4
+            self.T_col = 2
         
         if self.original:
             self.fig_dir = 'Original Data' + self.fig_dir
@@ -333,6 +369,8 @@ class DataProcessor:
             self.plot_MR()
         elif self.plot_func == 'plot_ACR_Monitor':
             self.plot_ACR_Monitor()
+        elif self.plot_func == 'plot_DCR_Monitor':
+            self.plot_DCR_Monitor()
         elif self.plot_func == 'plot_IV':
             self.plot_IV()
         elif self.plot_func == 'plot_Raman':
