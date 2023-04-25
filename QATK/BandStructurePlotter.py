@@ -14,6 +14,7 @@ class BandStructurePlotter:
         
 
         self.fig_dir = kwargs.get('fig_dir', 'data_fig')
+        self.data_dir = kwargs.get('fig_dir', 'data')
         self.input_filename = kwargs.get('input_filename', 'BandStructure.txt')
         self.output_filename = kwargs.get('output_filename', 'BandStructure')
         self.energy_range = kwargs.get('energy_range', [-2.0,2.0])
@@ -54,7 +55,7 @@ class BandStructurePlotter:
         Y_Data = np.linspace(self.energy_range[0],self.energy_range[1],len(Spectrum_Data))
 
         Segment_labels = ['\u0393', 'K', 'M']
-        Segments = [0,int(len(X_Data)/2),len(X_Data)]
+        Segments = [0,int(len(X_Data)/2),len(X_Data)-1]
 
         return X_Data, Y_Data, Spectrum_Data, Segments, Segment_labels
 
@@ -67,7 +68,7 @@ class BandStructurePlotter:
         
         for s in range(len(spin_name)):
 
-            X_Data, Y_Data, Spectrum_Data, Segments, Segment_labels = self.read_file(spin_name[s]+self.input_filename)
+            X_Data, Y_Data, Spectrum_Data, Segments, Segment_labels = self.read_file(self.data_dir+'/'+spin_name[s]+self.input_filename)
             Route = X_Data
             Energy = Y_Data
             Energy = np.flip(Energy)
