@@ -257,7 +257,7 @@ import numpy as np
 # Set up lattice
 vector_a = [{self.a}, 0.0, 0.0]*Angstrom
 vector_b = [0.0, {self.b}, 0.0]*Angstrom
-vector_c = [0.0, 0.0, {self.c}]*Angstrom
+vector_c = [0.0, 0.0, {self.c*3}]*Angstrom
 left_electrode_lattice = UnitCell(vector_a, vector_b, vector_c)
 
 # Define elements
@@ -283,7 +283,7 @@ left_electrode.addTags('Selection 0')
 # Set up lattice
 vector_a = [{self.a}, 0.0, 0.0]*Angstrom
 vector_b = [0.0, {self.b}, 0.0]*Angstrom
-vector_c = [0.0, 0.0, {self.c}]*Angstrom
+vector_c = [0.0, 0.0, {self.c*3}]*Angstrom
 right_electrode_lattice = UnitCell(vector_a, vector_b, vector_c)
 
 # Define elements
