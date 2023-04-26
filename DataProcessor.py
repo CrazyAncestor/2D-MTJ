@@ -164,7 +164,17 @@ class DataProcessor:
     def linear(self,x,*para):
         a, b = para
         return a*x + b
-        
+    
+    def normalize_func(self,x, max_or_min):
+        if max_or_min=='max':
+            std = np.max(x)
+        elif max_or_min=='min':
+            std = np.min(x)
+        elif max_or_min=='ave':
+            std = np.average(x)
+        y = (x-std*np.ones(len(x)))/std
+        return y
+
     def parabolic_func(self,x, *para):
         a, b, c = para
         return a*x**2 + b*x + c
@@ -213,6 +223,25 @@ class DataProcessor:
         
         self.plot_data(unit_convert,self.identity,self.identity,self.linear,[1.,1.],['V(V)','V(V)'],['I(A)','I(A)'],['I-V data','I-V curve'],['I-V data','I-V fitting'],text_func=text_func,data_point_style='line')
 
+    def plot_DC_MR(self):
+        self.x_col = self.I_col
+        self.y_col = self.R_col
+        unit_convert = [200.0,self.SourceVoltage]
+
+        def subtraction(x,y):
+            z = []
+            for i in range(len(x)):
+                z.append(x[i] - y[i])
+            return z
+
+        if self.original:
+            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR fitting'])
+        
+        else:
+            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','MR ratio(\%)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR ratio'],data_point_style='line')
+
+
+
     def plot_MR(self):
         self.x_col = self.I_col
         self.y_col = self.R_col
@@ -228,7 +257,7 @@ class DataProcessor:
             self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR fitting'])
         
         elif not self.bool_out_of_plane:
-            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR fitting'],data_point_style='line')
+            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','MR ratio(\%)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR ratio'],data_point_style='line')
 
         elif self.bool_out_of_plane and not self.original:
             B, MR_raw, MR_para = self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR fitting'])
@@ -256,7 +285,7 @@ class DataProcessor:
         y_data_all = []
         N = len(self.data)
 
-        if self.plot_func=='plot_DCR_Monitor':
+        if self.plot_func=='plot_DCR_Monitor' or self.plot_func=='plot_DC_MR':
             for i in range(N):
                 x_data, y_data = self.get_rid_of_zero(self.data[i][:,self.x_col],self.data[i][:,self.y_col])
                 y_data = 1/y_data
@@ -296,22 +325,30 @@ class DataProcessor:
             x_new0 = x_func(x_data_all[i])
             y_new0 = y_func(y_data_all[i])
 
-            if self.plot_func == 'plot_MR' and z_func == self.parabolic_func and np.max(np.abs(x_new0))>=2000:
+            if self.plot_func == 'plot_MR' and self.bool_out_of_plane==True and z_func == self.parabolic_func and np.max(np.abs(x_new0))>=2000:
                 xf, yf = self.give_some_range_of_data(x_new0,y_new0,value_range=[-7500,7500])
                 xf, yf = self.give_some_range_of_data(xf,yf,value_range=[-1000,1000],reverse=True)
                 
                 popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),xf,yf,p0=p0)
                 y_fit0 = z_func(x_new0,*popt)
 
-            elif self.plot_func == 'plot_MR' and z_func == self.parabolic_func and np.max(np.abs(x_new0))<2000:
+            elif self.plot_func == 'plot_MR' and self.bool_out_of_plane==True and z_func == self.parabolic_func and np.max(np.abs(x_new0))<2000:
                 y_fit0 = np.min(y_new0)*np.ones(len(y_new0))
                 
 
-            elif self.plot_func == 'plot_MR' and z_func == self.Hanle_effect:
+            elif self.plot_func == 'plot_MR' and self.bool_out_of_plane==True and z_func == self.Hanle_effect:
                 x_new0,y_new0 = self.give_some_range_of_data(x_new0,y_new0,value_range=[-1000,1000])
                 popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
                 y_fit0 = z_func(x_new0,*popt)
             
+            elif  self.plot_func == 'plot_DC_MR':
+                y_new0 = self.normalize_func(y_new0, max_or_min='max')*100
+                y_fit0 = y_new0
+
+            elif  self.plot_func == 'plot_MR' and self.bool_out_of_plane==False:
+                y_new0 = self.normalize_func(y_new0, max_or_min='ave')*100
+                y_fit0 = y_new0
+
             elif self.plot_func == 'plot_ACR_Monitor':
                 x_new0,y_new0 = self.give_some_range_of_data(x_new0,y_new0,value_range=[1/150.,1/20.])
                 popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
@@ -338,7 +375,10 @@ class DataProcessor:
                 
 
         # Plot figures
-        self.plot_figure(x_new+x_new,y_new+y_fit,self.labels+fit_labels,x_labels[1],y_labels[1],title=titles[1],figname=fignames[1],style=[data_point_style]*N+['line']*N)
+        if self.plot_func == 'plot_DC_MR' or (self.plot_func == 'plot_MR' and self.bool_out_of_plane==False):
+            self.plot_figure(x_new,y_new,self.labels+fit_labels,x_labels[1],y_labels[1],title=titles[1],figname=fignames[1],style=[data_point_style]*N)
+        else:
+            self.plot_figure(x_new+x_new,y_new+y_fit,self.labels+fit_labels,x_labels[1],y_labels[1],title=titles[1],figname=fignames[1],style=[data_point_style]*N+['line']*N)
         self.plot_figure(x_data_all,y_data_all,self.labels,x_labels[0],y_labels[0],title=titles[0],figname=fignames[0],style=[data_point_style]*N)
 
         return x_new,y_new,y_fit
@@ -347,6 +387,9 @@ class DataProcessor:
         #   Preliminary setup
         if self.plot_func == 'plot_MR':
             self.R_col = 5
+        elif self.plot_func == 'plot_DC_MR':
+            self.I_col = 1
+            self.R_col = 3
         elif self.plot_func == 'plot_ACR_Monitor':
             self.R_col = 6
         elif self.plot_func == 'plot_DCR_Monitor':
@@ -367,6 +410,8 @@ class DataProcessor:
         #   Plot figure
         if self.plot_func == 'plot_MR':
             self.plot_MR()
+        elif self.plot_func == 'plot_DC_MR':
+            self.plot_DC_MR()
         elif self.plot_func == 'plot_ACR_Monitor':
             self.plot_ACR_Monitor()
         elif self.plot_func == 'plot_DCR_Monitor':
