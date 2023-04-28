@@ -82,7 +82,7 @@ class DataProcessor:
         
 
     #   Result plotting function
-    def plot_figure(self, xs, ys, labels, x_label, y_label, title, figname, style):
+    def plot_figure(self, xs, ys, labels, x_label, y_label, title, figname, style,text_message=''):
         # Create a figure and axis object
         fig, ax = plt.subplots(figsize=(10, 8))
 
@@ -105,7 +105,15 @@ class DataProcessor:
         ax.set_title(title)
 
         # Set legend
-        ax.legend()
+        if self.plot_func=='plot_IV':
+            ax.legend(loc='lower right')
+        else:
+            ax.legend(loc='best')
+
+        # Show text message
+        if text_message!='':
+            ax.text(0.02,0.98, text_message, fontsize=12, ha='left', va='top', transform=ax.transAxes, bbox={'facecolor': 'white', 'pad': 0.5, 'edgecolor': 'black', 'alpha': 0.5})
+
 
         # Show the plot
         if self.original:
@@ -199,7 +207,7 @@ class DataProcessor:
 
         def text_func(x):
             return f'Band Gap = {(x/11606*1e3):.2e} meV'
-        
+                 
         self.plot_data(unit_convert,self.inverse,self.log,self.linear,[1.,1.],['Temp(K)','1/T(1/K)'],['R(Ohm)','log R'],['R-Temp curve','Boltzman Model fitting of R-Temp'],['R-Temp data','R-T fitting'],text_func=text_func)
     
     def plot_DCR_Monitor(self):
@@ -209,7 +217,7 @@ class DataProcessor:
 
         def text_func(x):
             return f'Band Gap = {(x/11606*1e3):.2e} meV'
-        
+
         self.plot_data(unit_convert,self.inverse,self.log,self.linear,[1.,1.],['Temp(K)','1/T(1/K)'],['R(Ohm)','log R'],['R-Temp curve','Boltzman Model fitting of R-Temp'],['R-Temp data','R-T fitting'],text_func=text_func)
 
 
@@ -221,7 +229,7 @@ class DataProcessor:
         def text_func(x):
             return f'Resistance = {(1/x):.2e} Ohm'
         
-        self.plot_data(unit_convert,self.identity,self.identity,self.linear,[1.,1.],['V(V)','V(V)'],['I(A)','I(A)'],['I-V data','I-V curve'],['I-V data','I-V fitting'],text_func=text_func,data_point_style='line')
+        self.plot_data(unit_convert,self.identity,self.identity,self.linear,[1.,1.],['V(V)','V(V)'],['I(A)','I(A)'],['I-V data','I-V curve'],['I-V data','I-V fitting'],text_func=text_func)
 
     def plot_DC_MR(self):
         self.x_col = self.I_col
@@ -235,10 +243,10 @@ class DataProcessor:
             return z
 
         if self.original:
-            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR fitting'])
+            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','R(Ohm)'],['MoS2 Out-of-plane MR, Hanging fabrication','SLGr Out-of-plane MR, Hanging fabrication'],['B-MR data','B-MR fitting'])
         
         else:
-            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','MR ratio(\%)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR ratio'],data_point_style='line')
+            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','MR ratio(\%)'],['MoS2 Out-of-plane MR, Hanging fabrication','SLGr Out-of-plane MR, Hanging fabrication'],['B-MR data','B-MR ratio'],data_point_style='line')
 
 
 
@@ -254,13 +262,13 @@ class DataProcessor:
             return z
 
         if self.original:
-            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR fitting'])
+            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','R(Ohm)'],['SLGr Out-of-plane MR, Stacking fabrication','SLGr Out-of-plane MR, Stacking fabrication'],['B-MR data','B-MR fitting'])
         
         elif not self.bool_out_of_plane:
-            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','MR ratio(\%)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR ratio'],data_point_style='line')
+            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','MR ratio(\%)'],['SLGr In-plane MR, Stacking fabrication','SLGr In-plane MR, Stacking fabrication'],['B-MR data','B-MR ratio'],data_point_style='line')
 
         elif self.bool_out_of_plane and not self.original:
-            B, MR_raw, MR_para = self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(B)','B(G)'],['R(Ohm)','R(Ohm)'],['B-MR curve','B-MR curve'],['B-MR data','B-MR fitting'])
+            B, MR_raw, MR_para = self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','R(Ohm)'],['SLGr Out-of-plane MR, Stacking fabrication','SLGr Out-of-plane MR, Stacking fabrication'],['B-MR data','B-MR fitting'])
         
             #   Fit Hanle signal
             Hanle_data = subtraction(MR_raw , MR_para)
@@ -268,8 +276,8 @@ class DataProcessor:
 
             def text_func(x):
                 return f'relaxation time = {x:.2e}sec'
-            
-            self.plot_data(unit_convert,self.identity,self.identity,self.Hanle_effect,[1e-10,1.],['B(B)','B(G)'],[r'$\Delta R(Ohm)$',r'$\Delta R(Ohm)$'],['Hanle Signal','Hanle Signal & Fitting'],['Hanle Signal','Hanle Signal & Fitting'],give_other_data=True,datax=B,datay=Hanle_data,text_func=text_func)
+
+            self.plot_data(unit_convert,self.identity,self.identity,self.Hanle_effect,[1e-10,1.],['B(G)','B(G)'],[r'$\Delta R(Ohm)$',r'$\Delta R(Ohm)$'],['Hanle Signal','Hanle Signal & Fitting'],['Hanle Signal','Hanle Signal & Fitting'],give_other_data=True,datax=B,datay=Hanle_data,text_func=text_func)
 
     def plot_Raman(self):
         self.x_col = self.rs_col
@@ -312,8 +320,10 @@ class DataProcessor:
 
         x_new = []
         y_new = []
+        x_fit = []
         y_fit = []
         fit_labels = []
+        text_labels = []
         
         
         for i in range(N):
@@ -331,54 +341,90 @@ class DataProcessor:
                 
                 popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),xf,yf,p0=p0)
                 y_fit0 = z_func(x_new0,*popt)
+                x_fit0 = x_new0
 
             elif self.plot_func == 'plot_MR' and self.bool_out_of_plane==True and z_func == self.parabolic_func and np.max(np.abs(x_new0))<2000:
                 y_fit0 = np.min(y_new0)*np.ones(len(y_new0))
-                
+                x_fit0 = x_new0
 
             elif self.plot_func == 'plot_MR' and self.bool_out_of_plane==True and z_func == self.Hanle_effect:
                 x_new0,y_new0 = self.give_some_range_of_data(x_new0,y_new0,value_range=[-1000,1000])
                 popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
-                y_fit0 = z_func(x_new0,*popt)
+                x_fit0  = np.linspace(x_new0[0],x_new0[-1],100)
+                y_fit0 = z_func(x_fit0,*popt)
+                
             
             elif  self.plot_func == 'plot_DC_MR':
                 y_new0 = self.normalize_func(y_new0, max_or_min='max')*100
                 y_fit0 = y_new0
+                x_fit0 = x_new0
 
             elif  self.plot_func == 'plot_MR' and self.bool_out_of_plane==False:
                 y_new0 = self.normalize_func(y_new0, max_or_min='ave')*100
                 y_fit0 = y_new0
+                x_fit0 = x_new0
 
             elif self.plot_func == 'plot_ACR_Monitor':
                 x_new0,y_new0 = self.give_some_range_of_data(x_new0,y_new0,value_range=[1/150.,1/20.])
                 popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
                 y_fit0 = z_func(x_new0,*popt)
+                x_fit0 = x_new0
 
             elif self.plot_func == 'plot_DCR_Monitor':
                 popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
                 y_fit0 = z_func(x_new0,*popt)
+                x_fit0 = x_new0
 
             else:
                 popt, pcov = curve_fit(lambda x, *para: z_func(x, *para),x_new0,y_new0,p0=p0)
                 y_fit0 = z_func(x_new0,*popt)
+                x_fit0 = x_new0
 
+            x_fit.append(x_fit0)
             y_fit.append(y_fit0)
             x_new.append(x_new0)
             y_new.append(y_new0)
-            
-            # Text message telling band gap energy
-                        
+
+            # labels       
             try:
-                fit_labels.append(self.labels[i]+' fitting, '+text_func(np.abs(popt[0])))
+                if self.plot_func == 'plot_MR' and self.bool_out_of_plane==True and z_func == self.parabolic_func and np.max(np.abs(x_new0))>=2000:
+                    fit_labels.append('Parabolic Background Signal')
+                elif self.plot_func == 'plot_MR' and self.bool_out_of_plane==True and z_func == self.parabolic_func and np.max(np.abs(x_new0))<2000:
+                    fit_labels.append('Parabolic Background Signal')
+                elif self.plot_func == 'plot_MR' and self.bool_out_of_plane==True and z_func == self.Hanle_effect:
+                    fit_labels.append('Hanle Fitting')
+                    
+                
+                elif  self.plot_func == 'plot_DC_MR':
+                    fit_labels.append('')
+
+                elif  self.plot_func == 'plot_MR' and self.bool_out_of_plane==False:
+                    fit_labels.append('')
+
+                elif self.plot_func == 'plot_ACR_Monitor':
+                    fit_labels.append('Boltzman relationship fitting')
+
+                elif self.plot_func == 'plot_DCR_Monitor':
+                    fit_labels.append('Boltzman relationship fitting')
+                elif self.plot_func == 'plot_IV':
+                    fit_labels.append('')
+                else:
+                    fit_labels.append(self.labels[i]+' fitting')
             except:
                 fit_labels.append('')
+            
+            # Text message telling band gap energy or spin lifetime
+            try:
+                text_message=text_func(np.abs(popt[0]))
+            except:
+                text_message=''
                 
 
         # Plot figures
         if self.plot_func == 'plot_DC_MR' or (self.plot_func == 'plot_MR' and self.bool_out_of_plane==False):
-            self.plot_figure(x_new,y_new,self.labels+fit_labels,x_labels[1],y_labels[1],title=titles[1],figname=fignames[1],style=[data_point_style]*N)
+            self.plot_figure(x_new,y_new,self.labels+fit_labels,x_labels[1],y_labels[1],title=titles[1],figname=fignames[1],style=[data_point_style]*N,text_message=text_message)
         else:
-            self.plot_figure(x_new+x_new,y_new+y_fit,self.labels+fit_labels,x_labels[1],y_labels[1],title=titles[1],figname=fignames[1],style=[data_point_style]*N+['line']*N)
+            self.plot_figure(x_new+x_fit,y_new+y_fit,self.labels+fit_labels,x_labels[1],y_labels[1],title=titles[1],figname=fignames[1],style=[data_point_style]*N+['line']*N,text_message=text_message)
         self.plot_figure(x_data_all,y_data_all,self.labels,x_labels[0],y_labels[0],title=titles[0],figname=fignames[0],style=[data_point_style]*N)
 
         return x_new,y_new,y_fit
