@@ -27,6 +27,7 @@ class DataProcessor:
         self.styles = kwargs.get('styles', ['dot','dot'])
 
         self.bool_out_of_plane = kwargs.get('bool_out_of_plane', True)
+        self.control_group =  kwargs.get('control_group', False)
         self.BI_conver_ratio = kwargs.get('BI_conver_ratio', 200.)
         self.SourceVoltage = kwargs.get('SourceVoltage', -7.)
         self.Hanle_Signal_Range = kwargs.get('Hanle_Signal_Range', 1000.)
@@ -243,7 +244,7 @@ class DataProcessor:
             return z
 
         if self.original:
-            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','R(Ohm)'],['MoS2 Out-of-plane MR, Hanging fabrication','SLGr Out-of-plane MR, Hanging fabrication'],['B-MR data','B-MR fitting'])
+            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','R(Ohm)'],['MoS2 MR data','MoS2 MR data'],['B-MR data','B-MR fitting'])
         
         else:
             self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','MR ratio(\%)'],['MoS2 Out-of-plane MR, Hanging fabrication','SLGr Out-of-plane MR, Hanging fabrication'],['B-MR data','B-MR ratio'],data_point_style='line')
@@ -262,13 +263,16 @@ class DataProcessor:
             return z
 
         if self.original:
-            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','R(Ohm)'],['SLGr Out-of-plane MR, Stacking fabrication','SLGr Out-of-plane MR, Stacking fabrication'],['B-MR data','B-MR fitting'])
+            self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','R(Ohm)'],['MR curve','MR curve'],['B-MR data','B-MR fitting'])
         
         elif not self.bool_out_of_plane:
             self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','MR ratio(\%)'],['SLGr In-plane MR, Stacking fabrication','SLGr In-plane MR, Stacking fabrication'],['B-MR data','B-MR ratio'],data_point_style='line')
 
         elif self.bool_out_of_plane and not self.original:
-            B, MR_raw, MR_para = self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','R(Ohm)'],['SLGr Out-of-plane MR, Stacking fabrication','SLGr Out-of-plane MR, Stacking fabrication'],['B-MR data','B-MR fitting'])
+            if self.control_group:
+                B, MR_raw, MR_para = self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','R(Ohm)'],['No Gr Out-of-plane MR, Stacking fabrication','No Gr Out-of-plane MR, Stacking fabrication'],['B-MR data','B-MR fitting'])
+            else:
+                B, MR_raw, MR_para = self.plot_data(unit_convert,self.identity,self.identity,self.parabolic_func,[1.,1.,1.],['B(G)','B(G)'],['R(Ohm)','R(Ohm)'],['SLGr Out-of-plane MR, Stacking fabrication','SLGr Out-of-plane MR, Stacking fabrication'],['B-MR data','B-MR fitting'])
         
             #   Fit Hanle signal
             Hanle_data = subtraction(MR_raw , MR_para)
@@ -329,6 +333,7 @@ class DataProcessor:
         for i in range(N):
             # Eliminate outliers
             x_data_all[i] , y_data_all[i] = self.sort_x_y(x_data_all[i],y_data_all[i])
+            x_data_all[i] , y_data_all[i] = self.eliminate_outliers(x_data_all[i],y_data_all[i])
             x_data_all[i] , y_data_all[i] = self.eliminate_outliers(x_data_all[i],y_data_all[i])
 
             # Fit the ACR function of T-R curve
