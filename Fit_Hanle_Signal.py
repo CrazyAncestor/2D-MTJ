@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt
 import csv
 from scipy.optimize import curve_fit
 from scipy.integrate import quad
+import os
+
+fabrication_method = 'Hanging fabrication'
 
 #   Define physical constant
 g = 2.   #   Lande g-factor
@@ -10,7 +13,7 @@ muB = 9.273e-24 #   Bohr magneton
 hbar = 1.054571817e-34  #   Reduced Planck Constant
 
 #   Data reading function
-def read_data(filename):
+def read_data(filename,data_start_row):
     # Open the file in read mode
     with open(filename, 'r',encoding="utf-8-sig") as file:
 
@@ -23,7 +26,7 @@ def read_data(filename):
         return data
 
 #   Data fitting function
-def fit_hanle_signal(data,Bz_colnum=2,R_colnum=3):
+def fit_hanle_signal(data,fig_dir,Bz_colnum=2,R_colnum=3):
 
     #   Define the function to fit
     def parabolic_func(x, a, b, c):
@@ -65,16 +68,17 @@ def fit_hanle_signal(data,Bz_colnum=2,R_colnum=3):
         # Fit the value of relax time in Hanle signals with Lorentzian model
         Bz_hanle,R_Hanle_signal = give_some_range_of_data(Bz,R_Hanle_signal,[-Signal_range,Signal_range])
         r0i = 1.
-        tausi = 1/(g*muB/hbar)
+        tausi = 1e-10
         p0 = [r0i,tausi]
         popt2, pcov2 = curve_fit(Hanle_effect, Bz_hanle, R_Hanle_signal,p0=p0)
         r0, taus = popt2
         taus = np.abs(taus)
-        R_fit_LorentzianModel = Hanle_effect(Bz_hanle,r0,taus)
+        Bz_fit = np.linspace(Bz_hanle[0],Bz_hanle[-1],100)
+        R_fit_LorentzianModel = Hanle_effect(Bz_fit,r0,taus)
         
         # Plot the results
-        plot_figure(Bz,[R_OriData,R_parabolic_background],['Original Data','Parabolic Background'],'Bz(Gauss)','Resistance(Omega)','Ori_Data vs. Para Background','OriData_ParabolicBackground.png',-1)
-        plot_figure(Bz_hanle,[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'Bz(Gauss)','Resistance(Omega)','Hanle signal vs. Hanle fitting','HanleSignalFitting.png',taus)
+        plot_figure([Bz,Bz],[R_OriData,R_parabolic_background],['Raw Data','Parabolic Background Signal'],'B(G)','R(Ohm)',fig_dir+' Out-of-plane MR, '+fabrication_method,fig_dir+'/'+fig_dir+'OriData_ParabolicBackground.png',-1)
+        plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta R(Ohm)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting.png',taus)
 
     else:
         R_background = np.min(R_OriData)*np.ones(len(R_OriData))
@@ -83,30 +87,31 @@ def fit_hanle_signal(data,Bz_colnum=2,R_colnum=3):
         # Fit the value of relax time in Hanle signals with Lorentzian model
         Bz_hanle,R_Hanle_signal = give_some_range_of_data(Bz,R_Hanle_signal,[-Signal_range,Signal_range])
         r0i = 1.
-        tausi = 1/(g*muB/hbar)
+        tausi = 1e-10
         p0 = [r0i,tausi]
         popt2, pcov2 = curve_fit(Hanle_effect, Bz_hanle, R_Hanle_signal,p0=p0)
         r0, taus = popt2
         taus = np.abs(taus)
-        R_fit_LorentzianModel = Hanle_effect(Bz_hanle,r0,taus)
+        Bz_fit = np.linspace(Bz_hanle[0],Bz_hanle[-1],100)
+        R_fit_LorentzianModel = Hanle_effect(Bz_fit,r0,taus)
         
         # Plot the results
-        plot_figure(Bz,[R_OriData,R_background],['Original Data','Background'],'Bz(Gauss)','Resistance(Omega)','Ori_Data vs. Background','OriData_Background.png',-1)
-        plot_figure(Bz_hanle,[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'Bz(Gauss)','Resistance(Omega)','Hanle signal vs. Hanle fitting','HanleSignalFitting.png',taus)
+        plot_figure([Bz,Bz],[R_OriData,R_background],['Raw Data','Parabolic Background Signal'],'B(G)','R(Ohm)',fig_dir+' Out-of-plane MR, '+fabrication_method,fig_dir+'/'+fig_dir+'OriData_Background.png',-1)
+        plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta R(Ohm)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting.png',taus)
 
 
 
 #   Result plotting function
-def plot_figure(x,ys,labels,x_label,y_label,title,plot_filename,taus):
+def plot_figure(xs,ys,labels,x_label,y_label,title,plot_filename,taus):
     # Create a figure and axis object
     fig, ax = plt.subplots(figsize=(10, 8))
 
     # Plot the data on the axis object
     for i in range(len(ys)):
         if i ==0:
-            ax.scatter(x, ys[i],label = labels[i])
+            ax.scatter(xs[i], ys[i],label = labels[i],color='blue')
         else:
-            ax.plot(x, ys[i],label = labels[i])
+            ax.plot(xs[i], ys[i],label = labels[i],color='red')
 
     # Set the x and y axis labels
     ax.set_xlabel(x_label)
@@ -127,20 +132,34 @@ def plot_figure(x,ys,labels,x_label,y_label,title,plot_filename,taus):
     plt.savefig(plot_filename)
 
 
+def DataProcessing(datafile,fig_dir,xcol,ycol,inplane=False):
+    if not os.path.exists(fig_dir):
+        os.makedirs(fig_dir)
+    #   Give the data filename
+    data_start_row = 1
+    Bz_colnum = xcol
+    R_colnum = ycol
+
+    #   Read the data
+    data = read_data(filename=datafile,data_start_row=data_start_row)
+
+    if inplane:
+        # Give the magnetic field and signal
+        Bz = data[:,Bz_colnum]
+        R_OriData = data[:,R_colnum]
+         # Plot the results
+        plot_figure([Bz],[R_OriData],['Raw Data'],'B(G)','R(Ohm)','In-plane MR, '+fabrication_method,fig_dir+'/'+fig_dir+'InplaneMR.png',-1)
+    else:
+        #   Fit the data
+        fit_hanle_signal(data,fig_dir,Bz_colnum=Bz_colnum,R_colnum=R_colnum)
+
 #   Main function
 
 if __name__ == '__main__':
-
-    #   Give the data filename
-    filename = 'data.csv'
-    data_start_row = 1
-    Bz_colnum = 2
-    R_colnum = 3
-
-    #   Read the data
-    data = read_data(filename=filename)
-
-    #   Fit the data
-    fit_hanle_signal(data,Bz_colnum=Bz_colnum,R_colnum=R_colnum)
+    DataProcessing('TC_Gr_MR_data.csv','SLGr',0,1)
+    DataProcessing('TC_Gr_MR_data.csv','MLGr',2,3)
+    DataProcessing('TC_Gr_MR_data.csv','SLFET',4,5)
+    DataProcessing('TCDATA_Inplane_MLGR.csv','Inplane_MLGr',0,1,inplane=True)
+    
 
     
