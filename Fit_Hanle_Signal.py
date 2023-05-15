@@ -5,12 +5,16 @@ from scipy.optimize import curve_fit
 from scipy.integrate import quad
 import os
 
-fabrication_method = 'Hanging fabrication'
-
 #   Define physical constant
 g = 2.   #   Lande g-factor
 muB = 9.273e-24 #   Bohr magneton
 hbar = 1.054571817e-34  #   Reduced Planck Constant
+
+def sort_x_y(x, y):
+    sort_indices = np.argsort(x)
+    x_sorted = x[sort_indices]
+    y_sorted = y[sort_indices]
+    return np.array(x_sorted),np.array(y_sorted)
 
 #   Data reading function
 def read_data(filename,data_start_row):
@@ -26,7 +30,7 @@ def read_data(filename,data_start_row):
         return data
 
 #   Data fitting function
-def fit_hanle_signal(data,fig_dir,Bz_colnum=2,R_colnum=3):
+def fit_hanle_signal(data,fig_dir,ext,Bz_colnum=2,R_colnum=3):
 
     #   Define the function to fit
     def parabolic_func(x, a, b, c):
@@ -56,9 +60,14 @@ def fit_hanle_signal(data,fig_dir,Bz_colnum=2,R_colnum=3):
     Bz = data[:,Bz_colnum]
     R_OriData = data[:,R_colnum]
     Signal_range = 2000
+
+    # Sort X,Y
+    Bz, R_OriData = sort_x_y(Bz, R_OriData)
+
     # Filter out the parabolic background
     if np.max(Bz)>2000:
-        x1,y1 = give_some_range_of_data(Bz,R_OriData,[-2500,2500],reverse=True)
+        x1,y1 = give_some_range_of_data(Bz,R_OriData,[-1000,1000],reverse=True)
+        x1,y1 = give_some_range_of_data(x1,y1,[-7500,7500])
         popt, pcov = curve_fit(parabolic_func, x1, y1)
 
         a, b, c = popt
@@ -76,16 +85,9 @@ def fit_hanle_signal(data,fig_dir,Bz_colnum=2,R_colnum=3):
         Bz_fit = np.linspace(Bz_hanle[0],Bz_hanle[-1],100)
         R_fit_LorentzianModel = Hanle_effect(Bz_fit,r0,taus)
         
-        # Sort X,Y
-        Bz, R_OriData = sort_x_y(Bz, R_OriData)
-        Bz, R_parabolic_background = sort_x_y(Bz, R_parabolic_background)
-
-        Bz_hanle, R_Hanle_signal = sort_x_y(Bz_hanle, R_Hanle_signal )
-        Bz_fit,R_fit_LorentzianModel = sort_x_y(Bz_fit,R_fit_LorentzianModel)
-        
         # Plot the results
-        plot_figure([Bz,Bz],[R_OriData,R_parabolic_background],['Raw Data','Parabolic Background Signal'],'B(G)','R(Ohm)',fig_dir+' Out-of-plane MR, '+fabrication_method,fig_dir+'/'+fig_dir+'OriData_ParabolicBackground.png',-1)
-        plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta R(Ohm)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting.png',taus)
+        plot_figure([Bz,Bz],[R_OriData*1e-7,R_parabolic_background*1e-7],['Raw Data','Parabolic Background Signal'],'B(G)','V(V)',fig_dir+' Out-of-plane MR',fig_dir+'/'+fig_dir+'OriData_ParabolicBackground'+ext,-1)
+        plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal*1e-7,R_fit_LorentzianModel*1e-7],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta V(V)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting'+ext,taus)
 
     else:
         R_background = np.min(R_OriData)*np.ones(len(R_OriData))
@@ -102,22 +104,11 @@ def fit_hanle_signal(data,fig_dir,Bz_colnum=2,R_colnum=3):
         Bz_fit = np.linspace(Bz_hanle[0],Bz_hanle[-1],100)
         R_fit_LorentzianModel = Hanle_effect(Bz_fit,r0,taus)
 
-        # Sort X,Y
-        Bz, R_OriData = sort_x_y(Bz, R_OriData)
-        Bz, R_parabolic_background = sort_x_y(Bz, R_parabolic_background)
-
-        Bz_hanle, R_Hanle_signal = sort_x_y(Bz_hanle, R_Hanle_signal )
-        Bz_fit,R_fit_LorentzianModel = sort_x_y(Bz_fit,R_fit_LorentzianModel)
-        
         # Plot the results
-        plot_figure([Bz,Bz],[R_OriData,R_background],['Raw Data','Parabolic Background Signal'],'B(G)','R(Ohm)',fig_dir+' Out-of-plane MR, '+fabrication_method,fig_dir+'/'+fig_dir+'OriData_Background.png',-1)
-        plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta R(Ohm)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting.png',taus)
+        plot_figure([Bz,Bz],[R_OriData*1e-7,R_background*1e-7],['Raw Data','Parabolic Background Signal'],'B(G)','V(V)',fig_dir+' Out-of-plane MR',fig_dir+'/'+fig_dir+'OriData_Background'+ext,-1)
+        plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal*1e-7,R_fit_LorentzianModel*1e-7],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta V(V)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting'+ext,taus)
 
-def sort_x_y(x, y):
-    sort_indices = np.argsort(x)
-    x_sorted = x[sort_indices]
-    y_sorted = y[sort_indices]
-    return np.array(x_sorted),np.array(y_sorted)
+
 
 #   Result plotting function
 def plot_figure(xs,ys,labels,x_label,y_label,title,plot_filename,taus):
@@ -150,7 +141,7 @@ def plot_figure(xs,ys,labels,x_label,y_label,title,plot_filename,taus):
     plt.savefig(plot_filename)
 
 
-def DataProcessing(datafile,fig_dir,xcol,ycol,inplane=False):
+def DataProcessing(datafile,fig_dir,xcol,ycol,ext='.png',inplane=False):
     if not os.path.exists(fig_dir):
         os.makedirs(fig_dir)
     #   Give the data filename
@@ -165,16 +156,25 @@ def DataProcessing(datafile,fig_dir,xcol,ycol,inplane=False):
         # Give the magnetic field and signal
         Bz = data[:,Bz_colnum]
         R_OriData = data[:,R_colnum]
-         # Plot the results
-        plot_figure([Bz],[R_OriData],['Raw Data'],'B(G)','R(Ohm)','In-plane MR, '+fabrication_method,fig_dir+'/'+fig_dir+'InplaneMR.png',-1)
+
+        # Sort X,Y
+        Bz, R_OriData = sort_x_y(Bz, R_OriData)
+        R_parallel = R_OriData[0]
+        R_ratio=(R_OriData - R_parallel*np.ones(len(R_OriData)) )/R_parallel 
+
+        # Plot the results
+        plot_figure([Bz],[R_ratio*100],['Raw Data'],'B(G)','MR Ratio (%)','In-plane MR',fig_dir+'/'+fig_dir+'InplaneMR'+ext,-1)
     else:
         #   Fit the data
-        fit_hanle_signal(data,fig_dir,Bz_colnum=Bz_colnum,R_colnum=R_colnum)
+        fit_hanle_signal(data,fig_dir,ext=ext,Bz_colnum=Bz_colnum,R_colnum=R_colnum)
 
 #   Main function
 
 if __name__ == '__main__':
-    DataProcessing('TC_Gr_MR_data.csv','SLGr',0,1)
-    DataProcessing('TC_Gr_MR_data.csv','MLGr',2,3)
-    DataProcessing('TC_Gr_MR_data.csv','SLFET',4,5)
-    DataProcessing('TCDATA_Inplane_MLGR.csv','Inplane_MLGr',0,1,inplane=True)
+    extension = '.svg'
+    DataProcessing('TC_Gr_MR_data.csv','SLGr',0,1,ext=extension)
+    DataProcessing('TC_Gr_MR_data.csv','MLGr',2,3,ext=extension)
+    DataProcessing('TC_Gr_MR_data.csv','SLFET',4,5,ext=extension)
+    DataProcessing('TC_Gr_MR_data.csv','WHGr',6,7,ext=extension)
+
+    DataProcessing('TCDATA_Inplane_MLGR.csv','Inplane_MLGr',0,1,ext=extension,inplane=True)
