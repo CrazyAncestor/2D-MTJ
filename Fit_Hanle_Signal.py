@@ -76,6 +76,13 @@ def fit_hanle_signal(data,fig_dir,Bz_colnum=2,R_colnum=3):
         Bz_fit = np.linspace(Bz_hanle[0],Bz_hanle[-1],100)
         R_fit_LorentzianModel = Hanle_effect(Bz_fit,r0,taus)
         
+        # Sort X,Y
+        Bz, R_OriData = sort_x_y(Bz, R_OriData)
+        Bz, R_parabolic_background = sort_x_y(Bz, R_parabolic_background)
+
+        Bz_hanle, R_Hanle_signal = sort_x_y(Bz_hanle, R_Hanle_signal )
+        Bz_fit,R_fit_LorentzianModel = sort_x_y(Bz_fit,R_fit_LorentzianModel)
+        
         # Plot the results
         plot_figure([Bz,Bz],[R_OriData,R_parabolic_background],['Raw Data','Parabolic Background Signal'],'B(G)','R(Ohm)',fig_dir+' Out-of-plane MR, '+fabrication_method,fig_dir+'/'+fig_dir+'OriData_ParabolicBackground.png',-1)
         plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta R(Ohm)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting.png',taus)
@@ -94,12 +101,23 @@ def fit_hanle_signal(data,fig_dir,Bz_colnum=2,R_colnum=3):
         taus = np.abs(taus)
         Bz_fit = np.linspace(Bz_hanle[0],Bz_hanle[-1],100)
         R_fit_LorentzianModel = Hanle_effect(Bz_fit,r0,taus)
+
+        # Sort X,Y
+        Bz, R_OriData = sort_x_y(Bz, R_OriData)
+        Bz, R_parabolic_background = sort_x_y(Bz, R_parabolic_background)
+
+        Bz_hanle, R_Hanle_signal = sort_x_y(Bz_hanle, R_Hanle_signal )
+        Bz_fit,R_fit_LorentzianModel = sort_x_y(Bz_fit,R_fit_LorentzianModel)
         
         # Plot the results
         plot_figure([Bz,Bz],[R_OriData,R_background],['Raw Data','Parabolic Background Signal'],'B(G)','R(Ohm)',fig_dir+' Out-of-plane MR, '+fabrication_method,fig_dir+'/'+fig_dir+'OriData_Background.png',-1)
         plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal,R_fit_LorentzianModel],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta R(Ohm)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting.png',taus)
 
-
+def sort_x_y(x, y):
+    sort_indices = np.argsort(x)
+    x_sorted = x[sort_indices]
+    y_sorted = y[sort_indices]
+    return np.array(x_sorted),np.array(y_sorted)
 
 #   Result plotting function
 def plot_figure(xs,ys,labels,x_label,y_label,title,plot_filename,taus):
@@ -160,6 +178,3 @@ if __name__ == '__main__':
     DataProcessing('TC_Gr_MR_data.csv','MLGr',2,3)
     DataProcessing('TC_Gr_MR_data.csv','SLFET',4,5)
     DataProcessing('TCDATA_Inplane_MLGR.csv','Inplane_MLGr',0,1,inplane=True)
-    
-
-    
