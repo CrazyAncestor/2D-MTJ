@@ -86,8 +86,8 @@ def fit_hanle_signal(data,fig_dir,ext,Bz_colnum=2,R_colnum=3):
         R_fit_LorentzianModel = Hanle_effect(Bz_fit,r0,taus)
         
         # Plot the results
-        plot_figure([Bz,Bz],[R_OriData*1e-7,R_parabolic_background*1e-7],['Raw Data','Parabolic Background Signal'],'B(G)','V(V)',fig_dir+' Out-of-plane MR',fig_dir+'/'+fig_dir+'OriData_ParabolicBackground'+ext,-1)
-        plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal*1e-7,R_fit_LorentzianModel*1e-7],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta V(V)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting'+ext,taus)
+        plot_figure([Bz,Bz],[R_OriData*1e-1,R_parabolic_background*1e-1],['Raw Data','Parabolic Background Signal'],'B(G)',r'$V(\mu V)$',fig_dir+' Out-of-plane MR',fig_dir+'/'+fig_dir+'OriData_ParabolicBackground'+ext,-1)
+        plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal*1e-1,R_fit_LorentzianModel*1e-1],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta V(\mu V)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting'+ext,taus)
 
     else:
         R_background = np.min(R_OriData)*np.ones(len(R_OriData))
@@ -105,8 +105,8 @@ def fit_hanle_signal(data,fig_dir,ext,Bz_colnum=2,R_colnum=3):
         R_fit_LorentzianModel = Hanle_effect(Bz_fit,r0,taus)
 
         # Plot the results
-        plot_figure([Bz,Bz],[R_OriData*1e-7,R_background*1e-7],['Raw Data','Parabolic Background Signal'],'B(G)','V(V)',fig_dir+' Out-of-plane MR',fig_dir+'/'+fig_dir+'OriData_Background'+ext,-1)
-        plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal*1e-7,R_fit_LorentzianModel*1e-7],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta V(V)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting'+ext,taus)
+        plot_figure([Bz,Bz],[R_OriData*1e-1,R_background*1e-1],['Raw Data','Parabolic Background Signal'],'B(G)',r'$V(\mu V)$',fig_dir+' Out-of-plane MR',fig_dir+'/'+fig_dir+'OriData_Background'+ext,-1)
+        plot_figure([Bz_hanle,Bz_fit],[R_Hanle_signal*1e-1,R_fit_LorentzianModel*1e-1],['Hanle Signal','Hanle Fitting'],'B(G)',r'$\Delta V(\mu V)$','Hanle signal & Fitting',fig_dir+'/'+fig_dir+'HanleSignalFitting'+ext,taus)
 
 
 
