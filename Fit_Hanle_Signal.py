@@ -10,11 +10,22 @@ g = 2.   #   Lande g-factor
 muB = 9.273e-24 #   Bohr magneton
 hbar = 1.054571817e-34  #   Reduced Planck Constant
 
+#   Data preprocessing function
 def sort_x_y(x, y):
     sort_indices = np.argsort(x)
     x_sorted = x[sort_indices]
     y_sorted = y[sort_indices]
     return np.array(x_sorted),np.array(y_sorted)
+
+def eliminate_outliers(x, y, threshold=3.):
+    def find_outliers(data,threshold=3.):
+        z_scores = np.abs((data - np.mean(data)) / np.std(data))
+        outliers = np.where(z_scores > threshold)[0]
+        return outliers
+    outlier_indices = find_outliers(y,threshold)
+    x_new = np.delete(x, outlier_indices)
+    y_new = np.delete(y, outlier_indices)
+    return np.array(x_new),np.array(y_new)
 
 #   Data reading function
 def read_data(filename,data_start_row):
@@ -64,6 +75,9 @@ def fit_hanle_signal(data,fig_dir,ext,Bz_colnum=2,R_colnum=3):
     # Sort X,Y
     Bz, R_OriData = sort_x_y(Bz, R_OriData)
 
+    # Filter outliers
+    Bz, R_OriData = eliminate_outliers(Bz, R_OriData)
+
     # Filter out the parabolic background
     if np.max(Bz)>2000:
         x1,y1 = give_some_range_of_data(Bz,R_OriData,[-1000,1000],reverse=True)
@@ -111,7 +125,7 @@ def fit_hanle_signal(data,fig_dir,ext,Bz_colnum=2,R_colnum=3):
 
 
 #   Result plotting function
-def plot_figure(xs,ys,labels,x_label,y_label,title,plot_filename,taus):
+def plot_figure(xs,ys,labels,x_label,y_label,title,plot_filename,taus,inplane=False):
     # Create a figure and axis object
     fig, ax = plt.subplots(figsize=(10, 8))
 
@@ -125,6 +139,7 @@ def plot_figure(xs,ys,labels,x_label,y_label,title,plot_filename,taus):
     # Set the x and y axis labels
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
+
 
     # Set the title of the plot
     ax.set_title(title)
@@ -159,11 +174,31 @@ def DataProcessing(datafile,fig_dir,xcol,ycol,ext='.png',inplane=False):
 
         # Sort X,Y
         Bz, R_OriData = sort_x_y(Bz, R_OriData)
+
+        # Filter outliers
+        Bz, R_OriData = eliminate_outliers(Bz, R_OriData,threshold=2.)
+        Bz, R_OriData = eliminate_outliers(Bz, R_OriData,threshold=2.)
+
         R_parallel = R_OriData[3]
         R_ratio=(R_OriData - R_parallel*np.ones(len(R_OriData)) )/R_parallel 
 
+        def Hanle_effect(Bz,r0,taus):
+            omega_L = (Bz/10000.)*g*muB/hbar # Turning Bz from Gauss to Tesla
+            y2 = r0 /(1+(taus*omega_L)**2)
+            return y2
+
+        r0i = 1.
+        tausi = 1e-10
+        p0 = [r0i,tausi]
+        popt2, pcov2 = curve_fit(Hanle_effect, Bz, R_ratio,p0=p0)
+        r0, taus = popt2
+        taus = np.abs(taus)
+        Bz_fit = np.linspace(Bz[0],Bz[-1],100)
+        R_fit_LorentzianModel = Hanle_effect(Bz_fit,r0,taus)
+
         # Plot the results
-        plot_figure([Bz],[R_ratio*100],['Raw Data'],'B(G)','MR Ratio (%)','In-plane MR',fig_dir+'/'+fig_dir+'InplaneMR'+ext,-1)
+        plot_figure([Bz,Bz_fit],[R_ratio*100,R_fit_LorentzianModel*100],['Raw Data',''],'B(G)','MR Ratio (%)','In-plane MR',fig_dir+'/'+fig_dir+'InplaneMR'+ext,-1,inplane=inplane)
+        
     else:
         #   Fit the data
         fit_hanle_signal(data,fig_dir,ext=ext,Bz_colnum=Bz_colnum,R_colnum=R_colnum)
