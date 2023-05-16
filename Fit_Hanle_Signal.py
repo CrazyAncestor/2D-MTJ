@@ -159,7 +159,7 @@ def DataProcessing(datafile,fig_dir,xcol,ycol,ext='.png',inplane=False):
 
         # Sort X,Y
         Bz, R_OriData = sort_x_y(Bz, R_OriData)
-        R_parallel = R_OriData[0]
+        R_parallel = R_OriData[3]
         R_ratio=(R_OriData - R_parallel*np.ones(len(R_OriData)) )/R_parallel 
 
         # Plot the results
