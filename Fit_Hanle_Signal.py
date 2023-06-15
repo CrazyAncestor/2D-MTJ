@@ -27,6 +27,27 @@ def eliminate_outliers(x, y, threshold=3.):
     y_new = np.delete(y, outlier_indices)
     return np.array(x_new),np.array(y_new)
 
+def smooth_data(x,y,n):
+    x_smooth =[]
+    y_smooth =[]
+    u = 0.
+    v = 0.
+    for i in range(len(x)):
+        if i%n==n-1:
+            u += x[i]
+            v += y[i]
+            u /= n
+            v /= n
+            x_smooth.append(u)
+            y_smooth.append(v)
+            u = 0.
+            v = 0.
+            
+        else:
+            u += x[i]
+            v += y[i]
+    return np.array(x_smooth), np.array(y_smooth)
+
 #   Data reading function
 def read_data(filename,data_start_row):
     # Open the file in read mode
